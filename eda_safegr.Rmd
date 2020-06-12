@@ -1,0 +1,103 @@
+
+```{r, include=FALSE}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(lubridate)
+library(usmap)
+```
+
+```{r}
+safegr <- read_feather("./safegr.feather")
+```
+
+```{r}
+safegr %>% 
+  filter(!key %in% c("total_visiting", "hometime_sd")) %>% 
+  ggplot(aes(x = decrease_30, fill = key)) + 
+  geom_bar()
+```
+
+```{r}
+safegr %>% 
+  filter(!key %in% c("total_visiting", "hometime_sd")) %>% 
+  ggplot(aes(x = decrease_50, fill = key)) + 
+  geom_bar() + 
+  theme(legend.title = element_blank()) +
+  xlab("50% decrease in visits")
+```
+
+```{r}
+safegr %>% 
+  filter(key == "recreation_visiting") %>% 
+  ggplot(aes(x = decrease_70, fill = key)) + 
+  geom_bar() + 
+  theme(legend.title = element_blank())
+```
+
+```{r}
+xx <- safegr %>% 
+  filter(key == "total_visiting") %>% 
+  rename(decrease = decrease_70) %>% 
+  select(fips, key, decrease)
+
+yy <- safegr %>% 
+  filter(key == "hometime_sd") %>% 
+  rename(decrease = decrease_30) %>% 
+  select(fips, key, decrease)
+
+rbind(xx, yy) %>% 
+  ggplot(aes(x = decrease, fill = key)) + 
+  geom_bar() + 
+  theme(legend.title = element_blank()) +
+  xlab("70% decrease in total visits \n 30% increase in median time spent at home")
+```
+
+```{r}
+safegr %>% 
+  filter(key == "hometime_sd") %>%  summary 
+```
+
+```{r}
+safegr %>% 
+  filter(key == "school_visits") %>%  summary 
+```
+
+```{r}
+safegr %>% 
+  filter(key == "college_visits")%>% summary 
+```
+
+```{r}
+safegr %>% 
+  filter(key == "total_visiting") %>% summary 
+```
+
+```{r}
+safegr %>% 
+  filter(key == "recreation_visiting") %>% summary 
+```
+
+```{r}
+## Join interventions and safegr data
+county_desc <- read_feather("./county_desc.feather")
+
+safegr_melt <- safegr %>% 
+  pivot_wider(names_from = key, values_from = -c(fips, key)) %>% 
+  left_join(county_desc)
+```
+
+```{r}
+safegr_melt %<>% 
+  mutate(days_betw_schools_decrease = 
+           as.numeric(decrease_70_school_visits - schools), 
+         days_betw_restaurants_decrease = 
+           as.numeric(decrease_50_recreation_visiting - restaurants), 
+         days_betw_stayhome_decrease = 
+           as.numeric(decrease_70_total_visiting - stayhome))
+
+summary(safegr_melt$days_betw_schools_decrease)
+summary(safegr_melt$days_betw_restaurants_decrease)
+summary(safegr_melt$days_betw_stayhome_decrease)
+```
+

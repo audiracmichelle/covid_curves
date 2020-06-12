@@ -1,0 +1,46 @@
+
+```{r, include=FALSE}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(usmap)
+```
+
+```{r}
+county_clean <- read_feather("./county_clean.feather")
+```
+
+```{r}
+county_clean %>% 
+  filter(index_desc == 1) %>% summary()
+```
+
+```{r}
+county_map <- county_clean %>% 
+  filter(index_desc == 1, 
+         cum_cases_per_cap > 0) %>% 
+  mutate(cum_cases_per_cap = log(cum_cases_per_cap))
+
+plot_usmap(data = county_map,  
+           include = county_map$fips, values = "cum_cases_per_cap") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) +
+  scale_fill_continuous(low = "white",
+                        high = "red",
+                        name = " ")
+```
+
+```{r}
+county_map <- county_clean %>% 
+  filter(index_desc == 1, 
+         cum_deaths_per_cap > 0) %>% 
+  mutate(cum_deaths_per_cap = log(cum_deaths_per_cap))
+
+plot_usmap(data = county_map, 
+           include = county_map$fips, values = "cum_deaths_per_cap") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) +
+  scale_fill_continuous(low = "white",
+                        high = "red",
+                        name = " ")
+```

@@ -1,0 +1,55 @@
+
+```{r, include=FALSE}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(usmap)
+```
+
+```{r}
+county_features <- read_feather("./county_features.feather")
+```
+
+```{r}
+county_features %>% 
+  filter(index_desc == 1, 
+         is.na(threshold_day)) %>% 
+  select(county, state)
+```
+
+```{r}
+county_features %>% 
+  filter(index_desc == 1, 
+         !is.na(threshold_day)) %>% 
+  mutate(week_num = as.numeric(strftime(threshold_day, format = "%V")), 
+         week_num = if_else(week_num < 11, 0, week_num), 
+         week_num = if_else(week_num > 15, 0, week_num), 
+         week_num = as.factor(week_num)) %>%
+  ggplot(aes(x = threshold_day, fill = week_num)) + 
+  geom_bar() +
+  scale_fill_manual(values = c("grey", "blue", "green", 
+                               "yellow", "red", "black")) + 
+  labs(title = "Counties threshold day")
+```
+
+```{r}
+county_features %>% 
+  filter(index_desc == 1, 
+         !is.na(threshold_day), 
+         !is.na(stayhome)) %>% 
+  pull(days_btwn_stayhome_thresh) %>% summary
+```
+
+```{r}
+county_map <- county_features %>% 
+  filter(index_desc == 1, 
+         !is.na(threshold_day), 
+         !is.na(stayhome)) %>% 
+  mutate(days_btwn_stayhome_thresh = -days_btwn_stayhome_thresh)
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "threshold_day") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) 
+```
+

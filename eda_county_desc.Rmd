@@ -1,0 +1,106 @@
+
+```{r, include=FALSE}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(usmap)
+```
+
+```{r}
+county_desc <- read_feather("./county_desc.feather")
+```
+
+```{r}
+summary(county_desc)
+```
+
+```{r}
+county_desc %>% 
+  select(fips, stayhome, gt50, gt500, schools, restaurants, entertainment) %>% 
+  gather(key, value, -fips) %>% 
+  filter(!is.na(value)) %>% 
+  ggplot(aes(x = value, fill = key)) + 
+  geom_bar() + 
+  ggtitle("Intervention Dates")
+```
+
+
+```{r}
+quantile(as.numeric(county_desc$gt50 - county_desc$gt500), c(0.15, 0.5, 0.85), na.rm = TRUE)
+```
+
+```{r}
+quantile(as.numeric(county_desc$entertainment - county_desc$restaurants), c(0.15, 0.5, 0.85), na.rm = TRUE)
+```
+
+```{r}
+quantile(as.numeric(county_desc$gt50 - county_desc$schools), c(0.15, 0.5, 0.85), na.rm = TRUE)
+quantile(as.numeric(county_desc$restaurants - county_desc$schools), c(0.15, 0.5, 0.85), na.rm = TRUE)
+```
+
+```{r}
+#stayhome, gt50, gt500, schools, restaurants, entertainment
+quantile(as.numeric(county_desc$gt50 - county_desc$stayhome), c(0.15, 0.85), na.rm = TRUE)
+quantile(as.numeric(county_desc$stayhome - county_desc$schools), c(0.15, 0.5, 0.85), na.rm = TRUE)
+quantile(as.numeric(county_desc$restaurants - county_desc$stayhome), c(0.15, 0.85), na.rm = TRUE)
+```
+
+```{r}
+county_desc %>% 
+  select(fips, stayhome, gt50, gt500, schools, restaurants, entertainment) %>% 
+  gather(key, value, -fips) %>% 
+  group_by(key) %>% 
+  summarize(no_intervention = sum(is.na(value)))
+```
+
+```{r}
+county_map <- county_desc %>% 
+  select(fips, stayhome) %>% 
+  filter(!is.na(stayhome)) %>% 
+  mutate(stayhome = strftime(stayhome, format = "%V"))
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "stayhome") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_manual(values = c("green","yellow","red","black"))
+```
+
+```{r}
+county_map <- county_desc %>% 
+  select(fips, gt50) %>% 
+  filter(!is.na(gt50)) %>% 
+  mutate(gt50 = strftime(gt50, format = "%V"))
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "gt50") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_manual(values = c("green","yellow","red","black"))
+```
+
+```{r}
+county_map <- county_desc %>% 
+  select(fips, schools) %>% 
+  filter(!is.na(schools)) %>% 
+  mutate(schools = strftime(schools, format = "%V"))
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "schools") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_manual(values = c("green","yellow","red","black"))
+```
+
+```{r}
+county_map <- county_desc %>% 
+  select(fips, restaurants) %>% 
+  filter(!is.na(restaurants)) %>% 
+  mutate(restaurants = strftime(restaurants, format = "%V"))
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "restaurants") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_manual(values = c("blue","green","yellow","red","black"))
+```

@@ -1,0 +1,34 @@
+
+```{r, include=FALSE}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(lubridate)
+library(usmap)
+```
+
+```{r}
+county_raw <- read_feather("./county_raw.feather")
+```
+
+```{r}
+max(county_raw$date, na.rm = TRUE)
+```
+
+
+```{r}
+county_raw[is.na(county_raw$county), c("state_code", "county_name")]
+```
+
+```{r}
+# Counties with NA cases in county_counts. This might be because there are no cases or the county ID is not available in the raw data
+
+county_map <- county_raw %>% 
+  distinct(fips, county) %>% 
+  mutate(no_counts = as.factor(!is.na(county)))
+
+plot_usmap(data = county_map, values = "no_counts") +
+  theme(legend.position = "right") + 
+  scale_fill_manual(values=c("red", "white")) +
+  theme(legend.title = element_blank())
+```
