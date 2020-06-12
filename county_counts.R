@@ -20,13 +20,9 @@ county_counts$fips[which(county_counts$state == "New York" &
 #county_counts[is.na(county_counts$fips), ] %>%  View
 county_counts <- county_counts[!is.na(county_counts$fips), ]
 
-## Create daily case and death count columns
-
 county_counts %<>% 
-  arrange(fips, state, county, date) %>% 
-  group_by(fips) %>% 
-  mutate(cases = diff(c(0,cum_cases))) %>%
-  mutate(deaths = diff(c(0,cum_deaths))) %>%
-  ungroup()
+  arrange(fips, state, county, date)
+
+#summary(county_counts$cum_cases)
 
 write_feather(county_counts, "./county_counts.feather")
