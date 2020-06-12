@@ -1,6 +1,8 @@
 ## Large files
-county_data.feather
+county_raw.feather
+county_clean.feather
 county_features.feather
+safegr_raw.feather
 
 ## Mac files
 .DS_Store
