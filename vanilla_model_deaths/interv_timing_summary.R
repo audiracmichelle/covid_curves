@@ -13,7 +13,8 @@ source("../plot_foo.R")
 
 ## modify values to obtain counterfactual
 county_pred$intervention_fit <- county_pred$intervention
-county_pred$intervention <- (county_pred$days_since_thresh >= 7 + 12) * 1
+county_pred$intervention <- (county_pred$days_since_thresh >= 20 + 12) * 1
+#county_pred$intervention <- 0
 
 # county_pred %>%
 #   select(fips, date, days_since_thresh, intervention_fit,intervention) %>%

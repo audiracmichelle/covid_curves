@@ -16,8 +16,8 @@ gg_vanilla_sampling <- function(county_data) {
                 alpha= 0.1, fill = "red") + 
     geom_vline(aes(xintercept = stayhome), color = "blue") + 
     geom_vline(aes(xintercept = stayhome + 12), linetype="dotted", color = "blue") +
-    geom_vline(aes(xintercept = threshold_day + 7), color = "red") + 
-    geom_vline(aes(xintercept = threshold_day + 7 + 12), linetype="dotted", color = "red") + 
+    geom_vline(aes(xintercept = threshold_day + 20), color = "red") + 
+    geom_vline(aes(xintercept = threshold_day + 20 + 12), linetype="dotted", color = "red") + 
     labs(title = county_, 
          x = "", y = "")
   p
