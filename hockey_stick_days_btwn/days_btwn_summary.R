@@ -8,18 +8,33 @@ library(gridExtra)
 county_pred <- read_feather("../county_train.feather")
 model <- readRDS("./model.rds")
 county_fit <- readRDS("./county_fit.rds")
-#coef_clusters <- readRDS("./coef_clusters.rds")
 source("../plot_foo.R")
 
 ## modify values to obtain counterfactual
 county_pred$intervention_fit <- county_pred$intervention
-#county_pred$intervention <- (county_pred$days_since_thresh >= 20 + 12) * 1
-county_pred$intervention <- 0
+county_pred$days_btwn_fit <- county_pred$days_btwn_stayhome_thresh
 
-# county_pred %>%
-#   select(fips, date, days_since_thresh, intervention_fit,intervention) %>%
-#   arrange(fips, date) %>%
-#   head(1000) %>% view
+county_pred1 <- county_pred
+county_pred3 <- county_pred
+
+county_pred1 = county_pred1 %>% 
+  mutate(days_btwn_stayhome_thresh = -7)
+county_pred3 = county_pred3 %>% 
+  mutate(days_btwn_stayhome_thresh = 15)
+
+# shift intervention up or down
+county_pred1$intervention = as.numeric(county_pred1$days_after_stayhome >= 
+                                         (12 + county_pred1$days_btwn_stayhome_thresh - county_pred$days_btwn_stayhome_thresh))
+county_pred3$intervention = as.numeric(county_pred3$days_after_stayhome >= 
+                                         (12 + county_pred3$days_btwn_stayhome_thresh - county_pred$days_btwn_stayhome_thresh))
+#this should shift the "intervention" date by the #days between threshold and intervention
+
+county_pred1 %>%
+  select(fips, date, days_since_thresh, 
+         intervention_fit, intervention, 
+         days_btwn_fit, days_btwn_stayhome_thresh) %>%
+  arrange(fips, date) %>%
+  head(1000) %>% view
 
 ## get posteriors
 
