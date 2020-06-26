@@ -359,6 +359,20 @@ county_train %>%
 ```
 
 ```{r}
+county_train %>% 
+  filter(index_desc == 1, 
+         !is.na(threshold_day), 
+         !is.na(stayhome), 
+         days_btwn_stayhome_thresh > 0) %>% 
+  pull(days_btwn_stayhome_thresh) %>% summary
+```
+
+```{r}
+summary(county_train$speed_btwn_stayhome)
+```
+
+
+```{r}
 county_map <- county_train %>% 
   filter(index_desc == 1, 
          !is.na(threshold_day), 

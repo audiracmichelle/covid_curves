@@ -20,7 +20,7 @@ model = stan_glmer.nb(
   data=county_train,
   algorithm="meanfield",
   iter = 15000,
-  adapt_iter = 5000,
+  adapt_iter = 1000,
   QR=TRUE)
 
 saveRDS(model, paste("./model.rds", sep = ""))
