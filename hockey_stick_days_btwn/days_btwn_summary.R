@@ -23,18 +23,25 @@ county_pred3 = county_pred3 %>%
   mutate(days_btwn_stayhome_thresh = 15)
 
 # shift intervention up or down
-county_pred1$intervention = as.numeric(county_pred1$days_after_stayhome >= 
+county_pred1$intervention = as.numeric((county_pred1$date - county_pred1$stayhome) >= 
                                          (12 + county_pred1$days_btwn_stayhome_thresh - county_pred$days_btwn_stayhome_thresh))
-county_pred3$intervention = as.numeric(county_pred3$days_after_stayhome >= 
+county_pred3$intervention = as.numeric((county_pred3$date - county_pred3$stayhome) >= 
                                          (12 + county_pred3$days_btwn_stayhome_thresh - county_pred$days_btwn_stayhome_thresh))
 #this should shift the "intervention" date by the #days between threshold and intervention
 
-county_pred1 %>%
-  select(fips, date, days_since_thresh, 
-         intervention_fit, intervention, 
-         days_btwn_fit, days_btwn_stayhome_thresh) %>%
-  arrange(fips, date) %>%
-  head(1000) %>% view
+# county_pred1 %>%
+#   select(fips, date, stayhome,
+#          intervention_fit, intervention,
+#          days_btwn_fit, days_btwn_stayhome_thresh) %>%
+#   arrange(fips, date) %>%
+#   head(1000) %>% view
+
+# county_pred3 %>%
+#   select(fips, date, days_since_thresh,
+#          intervention_fit, intervention,
+#          days_btwn_fit, days_btwn_stayhome_thresh) %>%
+#   arrange(fips, date) %>%
+#   head(1000) %>% view
 
 ## get posteriors
 

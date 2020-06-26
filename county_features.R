@@ -43,11 +43,9 @@ county_features %<>%
   ungroup()
 
 ## Make days_btwn_stayhome categorical 
-
 county_features %<>%
   mutate(speed_btwn_stayhome = cut(days_btwn_stayhome_thresh,
-                                 c(-Inf, -7, 0, 7, 14, Inf))) %>% 
-  mutate(speed_btwn_stayhome_copy = speed_btwn_stayhome)
+                                 c(-Inf, -7, 0, 7, 14, Inf)))
 
 #length(unique(county_features$fips))
 
