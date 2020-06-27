@@ -14,7 +14,7 @@ options(mc.cores=2)
 model = stan_glmer.nb(
   deaths ~
     poly(days_since_thresh, 2) * (nchs) + 
-    poly(days_since_thresh,2):(intervention + intervention:(speed_btwn_stayhome + nchs)) + 
+    poly(days_since_thresh,2):(intervention + intervention:(speed_btwn_stayhome_thresh + nchs)) + 
     (poly(days_since_thresh, 2) | fips),
   offset = log(pop),
   data=county_train,
