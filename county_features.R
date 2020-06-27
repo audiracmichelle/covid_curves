@@ -44,8 +44,8 @@ county_features %<>%
 
 ## Make days_btwn_stayhome categorical 
 county_features %<>%
-  mutate(speed_btwn_stayhome = cut(days_btwn_stayhome_thresh,
-                                 c(-Inf, -7, 0, 7, 14, Inf)))
+  mutate(speed_btwn_stayhome_thresh = cut(days_btwn_stayhome_thresh,
+                                 c(-Inf, -8, 0, 7, 14, Inf)))
 
 ## join with nchs data
 
