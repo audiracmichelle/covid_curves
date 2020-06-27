@@ -13,14 +13,19 @@ source("../plot_foo.R")
 ## modify values to obtain counterfactual
 county_pred$intervention_fit <- county_pred$intervention
 county_pred$days_btwn_fit <- county_pred$days_btwn_stayhome_thresh
+county_pred$speed_btwn_fit <- county_pred$speed_btwn_stayhome
 
 county_pred1 <- county_pred
 county_pred3 <- county_pred
 
 county_pred1 = county_pred1 %>% 
-  mutate(days_btwn_stayhome_thresh = -7)
+  mutate(days_btwn_stayhome_thresh = -7) %>% 
+  mutate(speed_btwn_stayhome = cut(days_btwn_stayhome_thresh,
+                                        c(-Inf, -7, 0, 7, 14, Inf)))
 county_pred3 = county_pred3 %>% 
-  mutate(days_btwn_stayhome_thresh = 15)
+  mutate(days_btwn_stayhome_thresh = 15) %>% 
+  mutate(speed_btwn_stayhome = cut(days_btwn_stayhome_thresh,
+                                        c(-Inf, -7, 0, 7, 14, Inf)))
 
 # shift intervention up or down
 county_pred1$intervention = as.numeric((county_pred1$date - county_pred1$stayhome) >= 
@@ -32,7 +37,8 @@ county_pred3$intervention = as.numeric((county_pred3$date - county_pred3$stayhom
 # county_pred1 %>%
 #   select(fips, date, stayhome,
 #          intervention_fit, intervention,
-#          days_btwn_fit, days_btwn_stayhome_thresh) %>%
+#          days_btwn_fit, days_btwn_stayhome_thresh, 
+#          speed_btwn_fit, speed_btwn_stayhome) %>%
 #   arrange(fips, date) %>%
 #   head(1000) %>% view
 
@@ -82,7 +88,7 @@ for(c in 1:6) {
   county_plots <- marrangeGrob(county_plots, 
                                nrow = 6, ncol = 2, 
                                left = "", top = "")
-  ggsave(paste("./days_btwn_summary/", 
+  ggsave(paste("./speed_sampling/", 
                "sampling_nchs_", c, ".pdf", sep = ""), 
          county_plots, width = 15, height = 25, units = "cm")
 
