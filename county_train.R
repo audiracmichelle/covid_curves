@@ -1,7 +1,6 @@
 library(tidyverse)
 library(magrittr)
 library(feather)
-library(lubridate)
 library(xts)
 
 ## Read data
@@ -15,7 +14,7 @@ county_train <- county_train[-which(county_train$deaths < 0), ]
 #length(unique(county_train$fips))
 
 ## Compute rolling means
-county_clean %<>% 
+county_train %<>% 
   group_by(fips) %>% 
   arrange(date) %>% 
   mutate(roll_deaths = rollmean(deaths, 7, fill = NA)) %>% 

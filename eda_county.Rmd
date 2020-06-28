@@ -1,12 +1,13 @@
 
-## county_desc
-
 ```{r, include=FALSE}
 library(tidyverse)
 library(magrittr)
 library(feather)
+library(lubridate)
 library(usmap)
 ```
+
+## county_desc
 
 ```{r}
 county_desc <- read_feather("./county_desc.feather")
@@ -109,16 +110,7 @@ plot_usmap(data = county_map, include = county_map$fips,
 
 ## county_raw
 
-```{r, include=FALSE}
-library(tidyverse)
-library(magrittr)
-library(feather)
-library(lubridate)
-library(usmap)
-```
-
 ```{r}
-#county_raw <- read_feather("./county_raw.feather")
 source("./county_raw.R")
 ```
 
@@ -145,15 +137,7 @@ plot_usmap(data = county_map, values = "no_counts") +
 
 ## county_clean
 
-```{r, include=FALSE}
-library(tidyverse)
-library(magrittr)
-library(feather)
-library(usmap)
-```
-
 ```{r}
-#county_clean <- read_feather("./county_clean.feather")
 source("./county_clean.R")
 ```
 
@@ -194,15 +178,7 @@ plot_usmap(data = county_map,
 
 ## county_features
 
-```{r, include=FALSE}
-library(tidyverse)
-library(magrittr)
-library(feather)
-library(usmap)
-```
-
 ```{r}
-#county_features <- read_feather("./county_features.feather")
 source("./county_features.R")
 ```
 
@@ -211,24 +187,6 @@ county_features %>%
   filter(index_desc == 1, 
          is.na(threshold_day)) %>% 
   select(county, state)
-```
-
-```{r}
-# counties with nchs in group 1 that are filtered in county_train
-county_features %>% 
-  filter(index_desc == 1, 
-         fips %in% c("40109", "51710"))
-#40109 oklahoma did not enact stayhome
-#51710 virginia cum_deaths did not reach q75
-```
-
-```{r}
-## comparing nchs population entry and county_desc pop variable
-county_features %>% 
-  filter(index_desc == 1) %>% 
-  mutate(diff_pop = pop - popul) %>%
-  ggplot() +
-  geom_histogram(aes(x = diff_pop))
 ```
 
 ```{r}
@@ -251,15 +209,6 @@ county_features %>%
   filter(index_desc == 1, 
          !is.na(threshold_day), 
          !is.na(stayhome)) %>% 
-  pull(days_btwn_stayhome_thresh) %>% summary
-```
-
-```{r}
-county_features %>% 
-  filter(index_desc == 1, 
-         !is.na(threshold_day), 
-         !is.na(stayhome), 
-         days_btwn_stayhome_thresh > 0) %>% 
   pull(days_btwn_stayhome_thresh) %>% summary
 ```
 
@@ -340,16 +289,8 @@ plot_usmap(data = county_map, include = county_map$fips,
 
 ## county_train
 
-```{r, include=FALSE}
-library(tidyverse)
-library(magrittr)
-library(feather)
-library(usmap)
-```
-
 ```{r}
 county_train <- read_feather("./county_train.feather")
-#source("./county_train.R")
 ```
 
 ```{r}
@@ -388,7 +329,7 @@ county_train %>%
   filter(index_desc == 1, 
          !is.na(threshold_day), 
          !is.na(stayhome)) %>% 
-  pull(speed_btwn_stayhome) %>% summary
+  pull(speed_btwn_stayhome_thresh) %>% summary
 ```
 
 ```{r}
@@ -402,6 +343,100 @@ plot_usmap(data = county_map, include = county_map$fips,
            values = "threshold_day") +
   theme(legend.position = "right") + 
   theme(legend.title = element_blank()) 
+```
+
+```{r}
+county_train %>% 
+  filter(fips %in% c("48453", "06075")) %>% 
+  ggplot() + 
+  geom_point(aes(x=date, y=deaths, color=fips)) + 
+  geom_line(aes(x=date, y=roll_deaths, color=fips))
+```
+
+## nchs
+
+```{r}
+nchs <- read_feather("./nchs.feather")
+```
+
+```{r}
+summary(nchs)
+```
+
+```{r}
+#counties with no population
+nchs[is.na(nchs$popul), ]
+```
+
+```{r}
+plot_usmap(data = nchs, values = "nchs") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) 
+```
+
+```{r}
+# why are counties having an nchs of 1,2,3,4 not in county_train?
+train_fips <- unique(county_train$fips)
+
+nchs %>%
+  filter(nchs %in% c(1,2,3,4), 
+         !fips %in% train_fips) %>% 
+  arrange(nchs)
+```
+
+```{r}
+# counties with nchs in group 1 that are filtered in county_train
+county_features %>% 
+  filter(index_desc == 1, 
+         fips %in% c("40109", "51710"))
+#40109 oklahoma did not enact stayhome
+#51710 virginia cum_deaths did not reach q75
+```
+
+```{r}
+## comparing nchs population entry and county_desc pop variable
+county_features %>% 
+  filter(index_desc == 1) %>% 
+  mutate(diff_pop = pop - popul) %>%
+  ggplot() +
+  geom_histogram(aes(x = diff_pop))
+```
+
+```{r}
+## distribution of nchs in county_train
+county_train %>% 
+  filter(index_desc == 1) %>% 
+  pull(nchs) %>% summary()
+```
+
+```{r}
+## distribution of nchs and speed_btwn
+tt <- county_train %>% 
+  filter(index_desc == 1) %>%
+  select(fips, nchs, speed_btwn_stayhome_thresh)
+
+table(tt$nchs, tt$speed_btwn_stayhome_thresh)
+```
+
+```{r}
+## distribution of population by nchs in train set
+county_train %>% 
+  filter(index_desc == 1) %>% 
+  group_by(nchs) %>% 
+  summarise(cum_cases_per_cap = mean(cum_cases_per_cap), 
+            cum_deaths_per_cap = mean(cum_deaths_per_cap), 
+            cum_cases_per_sq_mi = mean(cum_cases_per_sq_mi), 
+            cum_deaths_per_sq_mi = mean(cum_deaths_per_sq_mi),
+            pop = mean(pop), 
+            popdensity = mean(popdensity))
+```
+
+```{r}
+county_train %>% 
+  group_by(nchs, fips) %>% 
+  summarise(max_roll = max(roll_deaths, na.rm = TRUE)) %>% 
+  group_by(nchs) %>% 
+  summarise(max_roll = mean(max_roll))
 ```
 
 ```{r}

@@ -15,7 +15,7 @@ county_train <- county_train[-which(county_train$cases < 0), ]
 #length(unique(county_train$fips))
 
 ## Compute rolling means
-county_clean %<>% 
+county_train %<>% 
   group_by(fips) %>% 
   arrange(date) %>% 
   mutate(roll_cases = rollmean(cases, 7, fill = NA)) %>% 
@@ -52,13 +52,13 @@ county_train <- county_train[!county_train$fips %in% remove_fips, ]
 ## Make smaller dataset
 cum_cases_ <- county_train %>% 
   group_by(fips) %>% 
-  summarise(cum_cases_ = max(cum_cases_)) %>% 
-  ungroup() %>% pull(cum_cases_)
+  summarise(cum_cases = max(cum_cases)) %>% 
+  ungroup() %>% pull(cum_cases)
 #summary(cum_cases_)
 
 remove_fips <- county_train %>% 
   group_by(fips) %>% 
-  summarise(cum_cases_ = max(cum_cases_)) %>% 
+  summarise(cum_cases = max(cum_cases)) %>% 
   filter(cum_cases_ < quantile(cum_cases_, 0.6)) %>% 
   pull(fips)
 

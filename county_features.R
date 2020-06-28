@@ -1,7 +1,6 @@
 library(tidyverse)
 library(magrittr)
 library(feather)
-library(lubridate)
 
 ## Read
 if(!"county_clean" %in% ls()) source("./county_clean.R")
