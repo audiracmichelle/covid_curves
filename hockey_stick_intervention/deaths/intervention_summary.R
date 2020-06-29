@@ -26,8 +26,19 @@ county_pred$intervention <- 0
 county_ctr <- model %>% 
   posterior_predict(county_pred, draws = 500)
 
-county_pred <- fit_sampling(county_pred, county_fit)
-county_pred <- ctr_sampling(county_pred, county_ctr)
+county_pred %<>% 
+  mutate(
+    fit_mu = apply(county_fit, 2, mean),
+    fit_med = apply(county_fit, 2, quantile, probs = 0.5), # use posterior median to hand skewness
+    fit_lo = apply(county_fit, 2, quantile, probs = 0.05),
+    fit_hi = apply(county_fit, 2, quantile, probs = 0.95))
+
+county_pred %<>% 
+  mutate(
+    ctr_mu = apply(county_ctr, 2, mean),
+    ctr_med = apply(county_ctr, 2, quantile, probs = 0.5), # use posterior median to hand skewness
+    ctr_lo = apply(county_ctr, 2, quantile, probs = 0.05),
+    ctr_hi = apply(county_ctr, 2, quantile, probs = 0.95))
 
 ## generate nchs summaries
 for(c in 1:6) {
@@ -46,5 +57,4 @@ for(c in 1:6) {
   ggsave(paste("./intervention_summary/", 
                "sampling_nchs_", c, ".pdf", sep = ""), 
          county_plots, width = 15, height = 25, units = "cm")
-
 }
