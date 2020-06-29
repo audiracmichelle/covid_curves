@@ -1,7 +1,3 @@
-library(tidyverse)
-library(magrittr)
-library(feather)
-
 ## Read
 if(!"county_clean" %in% ls()) source("./county_clean.R")
 county_features <- county_clean
@@ -34,13 +30,6 @@ county_features %<>%
   group_by(fips) %>%
   mutate(days_btwn_stayhome_thresh = as.numeric(stayhome - threshold_day)) %>%
   ungroup()
-
-## Make days_btwn_stayhome categorical 
-county_features %<>%
-  mutate(speed_btwn_stayhome_thresh = cut(days_btwn_stayhome_thresh,
-                                 c(-Inf, -8, 0, 7, 14, Inf)))
-
-county_features$speed_btwn_copy <- county_features$speed_btwn_stayhome_thresh
 
 ## join with nchs data
 

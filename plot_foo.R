@@ -62,8 +62,8 @@ gg_days_btwn_sampling <- function(county_data) {
                 alpha= 0.1, fill = "red") +  
     geom_vline(aes(xintercept = stayhome), color = "blue") + 
     geom_vline(aes(xintercept = stayhome + 12), linetype="dotted", color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + 12 - 8), linetype="dotted", color = "green") + 
-    geom_vline(aes(xintercept = stayhome + 12 + 15), linetype="dotted", color = "red") + 
+    geom_vline(aes(xintercept = stayhome + 12 - 7), linetype="dotted", color = "green") + 
+    geom_vline(aes(xintercept = stayhome + 12 + 5), linetype="dotted", color = "red") + 
     labs(title = county_, 
          x = "", y = "")
   p

@@ -1,6 +1,3 @@
-library(tidyverse)
-library(magrittr)
-library(feather)
 library(lubridate)
 
 ## Read
@@ -52,5 +49,7 @@ county_clean %<>%
   mutate(index = row_number(), 
          index_desc = sort(index, decreasing = TRUE)) %>% 
   ungroup()
+
+county_clean <- arrange(county_clean, fips, index)
 
 rm(list=c("popdensity_"))

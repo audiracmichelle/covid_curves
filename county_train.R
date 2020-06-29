@@ -1,6 +1,3 @@
-library(tidyverse)
-library(magrittr)
-library(feather)
 library(xts)
 
 ## Read data
@@ -94,13 +91,21 @@ county_train %<>%
 #          grepl("county", county)) %>% view
 
 ## Create index columns
-
 county_train %<>% 
   group_by(fips) %>% 
   arrange(date) %>% 
   mutate(index = row_number(), 
          index_desc = sort(index, decreasing = TRUE)) %>% 
   ungroup()
+
+county_train <- arrange(county_train, fips, index)
+
+## Make days_btwn_stayhome categorical 
+county_train %<>%
+  mutate(speed_btwn_stayhome_thresh = cut(days_btwn_stayhome_thresh,
+                                          c(-Inf, -10, -3, 3, Inf)))
+
+county_train$speed_btwn_copy <- county_train$speed_btwn_stayhome_thresh
 
 rm(list=c("cum_deaths_", 
           "remove_fips"))
