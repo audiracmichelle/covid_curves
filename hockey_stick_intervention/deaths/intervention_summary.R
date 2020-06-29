@@ -8,7 +8,7 @@ library(gridExtra)
 county_pred <- read_feather("../../county_train.feather")
 model <- readRDS("./model.rds")
 county_fit <- readRDS("./county_fit.rds")
-source("../plot_foo.R")
+source("../../plot_foo.R")
 
 ## define y
 county_pred$y <- county_pred$deaths

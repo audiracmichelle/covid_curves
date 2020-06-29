@@ -22,8 +22,8 @@ model = stan_glmer.nb(
   offset = log(pop),
   data=county_train,
   algorithm="meanfield",
-  iter = 150000,
-  adapt_iter = 5000,
+  iter = 50000,
+  adapt_iter = 1000,
   QR=TRUE)
 
 saveRDS(model, paste("./model.rds", sep = ""))
