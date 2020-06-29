@@ -11,10 +11,10 @@ county_fit <- readRDS("./county_fit.rds")
 source("../../plot_foo.R")
 
 ## define y
-county_predv$y <- county_pred$roll_deaths
+county_pred$y <- county_pred$roll_deaths
 #dim(county_pred)
 county_pred %<>% 
-  filter(!is.na(county_pred))
+  filter(!is.na(roll_deaths))
 #dim(county_pred)
 
 ## modify values to obtain counterfactual
