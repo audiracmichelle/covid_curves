@@ -77,7 +77,7 @@ county_pred %<>%
 for(c in 1:6) {
     fips_ <- county_pred %>% 
     filter(index == 1, nchs == c) %>% 
-    arrange(desc(pop)) %>% 
+    arrange(desc(days_btwn_stayhome_thresh), desc(pop)) %>% 
     pull(fips)
 
   county_plots <- lapply(fips_, 
