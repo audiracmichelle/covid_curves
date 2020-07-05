@@ -84,6 +84,7 @@ ggplotly(safegr %>%
 ```{r}
 safegr %<>% 
   group_by(fips, key) %>% 
+  arrange(date) %>% 
   mutate(week = as.numeric(rollmean(value, 7, fill = NA))) %>% 
   ungroup()
 ```
@@ -99,13 +100,20 @@ ggplotly(safegr %>%
 ## Baseline 
 
 get_baseline <- function(date, x) {
-  median(x[date >= as.Date("2020-01-15") & date <= as.Date("2020-02-15")])
+  mean(x[date >= as.Date("2020-01-15") & date <= as.Date("2020-02-15")])
 }
 
 safegr %<>% 
   group_by(fips, key) %>% 
   mutate(baseline = get_baseline(date, value)) %>%
   ungroup()
+```
+
+```{r}
+xx <- safegr %>% 
+  distinct(fips, key, baseline) 
+
+tapply(xx$baseline, xx$key, summary)
 ```
 
 ```{r}
@@ -142,6 +150,22 @@ ggplotly(safegr %>%
 
 ```{r}
 safegr %<>% 
+  group_by(fips, key) %>% 
+  mutate(roll_relative_week = rollapply(relative_week, 10, mean, 
+                               fill = NA, align = "right")) %>% 
+  ungroup() %>% 
+  mutate(roll_relative_week = as.numeric(roll_relative_week))
+```
+
+```{r}
+ggplotly(safegr %>%
+                filter(fips == "48453")  %>%
+                ggplot() +
+                geom_line(aes(x = date, y = roll_relative_week, color = key)))
+```
+
+```{r}
+safegr %<>% 
   filter(date > "2020-02-15", 
          !is.na(week))
 ```
@@ -149,7 +173,7 @@ safegr %<>%
 ```{r}
 safegr %<>% 
   group_by(fips, key) %>%
-  mutate(min_relative = min(relative_week, na.rm = TRUE)) %>% 
+  mutate(min_relative = min(roll_relative_week, na.rm = TRUE)) %>% 
   ungroup()
 
 xx <- safegr %>%distinct(fips, key, min_relative)
@@ -157,24 +181,38 @@ summary(xx$min_relative)
 ```
 
 ```{r}
-safegr$decrease_30 <- safegr$date
-safegr$decrease_30[safegr$relative_week > 0.7] <- as.Date("2020-12-31")
+xx <- safegr %>% 
+  distinct(fips, key, min_relative) 
+
+tapply(xx$min_relative, xx$key, summary)
+```
+
+```{r}
+safegr$decrease_40 <- safegr$date
+safegr$decrease_40[safegr$roll_relative_week > 0.6] <- as.Date("2020-12-31")
 
 safegr %<>% 
   group_by(fips, key) %>% 
-  mutate(decrease_30 = min(decrease_30)) %>% 
+  mutate(decrease_40 = min(decrease_40)) %>% 
   ungroup()
 
-safegr$decrease_30[safegr$decrease_30 == as.Date("2020-12-31")] <- NA
+safegr$decrease_40[safegr$decrease_40 == as.Date("2020-12-31")] <- NA
 
 safegr %>% 
-  distinct(fips, key, decrease_30) %>% 
-  pull(decrease_30) %>% summary
+  distinct(fips, key, decrease_40) %>% 
+  pull(decrease_40) %>% summary
+```
+
+```{r}
+xx <- safegr %>% 
+  distinct(fips, key, decrease_40) 
+
+tapply(xx$decrease_40, xx$key, summary)
 ```
 
 ```{r}
 safegr$decrease_50 <- safegr$date
-safegr$decrease_50[safegr$relative_week > 0.5] <- as.Date("2020-12-31")
+safegr$decrease_50[safegr$roll_relative_week > 0.5] <- as.Date("2020-12-31")
 
 safegr %<>% 
   group_by(fips, key) %>% 
@@ -189,11 +227,18 @@ safegr %>%
 ```
 
 ```{r}
+xx <- safegr %>% 
+  distinct(fips, key, decrease_50) 
+
+tapply(xx$decrease_50, xx$key, summary)
+```
+
+```{r}
 #safegr %>% select(fips, key, date, relative_week, contains("decrease")) %>% head(5000) %>% view()
 
 safegr$decrease_70 <- safegr$date
 
-safegr$decrease_70[safegr$relative_week > 0.3] <- as.Date("2020-12-31")
+safegr$decrease_70[safegr$roll_relative_week > 0.3] <- as.Date("2020-12-31")
 
 safegr %<>% 
   group_by(fips, key) %>% 
@@ -208,10 +253,17 @@ safegr %>%
 ```
 
 ```{r}
+xx <- safegr %>% 
+  distinct(fips, key, decrease_70) 
+
+tapply(xx$decrease_70, xx$key, summary)
+```
+
+```{r}
 safegr %<>% 
   distinct(fips, key, 
            baseline, min_relative, 
-           decrease_30, decrease_50, decrease_70)
+           decrease_40, decrease_50, decrease_70)
 ```
 
 ```{r}

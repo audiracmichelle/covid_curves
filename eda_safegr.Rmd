@@ -1,10 +1,10 @@
-
 ```{r, include=FALSE}
 library(tidyverse)
 library(magrittr)
 library(feather)
 library(lubridate)
 library(usmap)
+library(viridis)
 ```
 
 ```{r}
@@ -14,7 +14,14 @@ safegr <- read_feather("./safegr.feather")
 ```{r}
 safegr %>% 
   filter(!key %in% c("total_visiting", "hometime_sd")) %>% 
-  ggplot(aes(x = decrease_30, fill = key)) + 
+  ggplot(aes(x = decrease_40, fill = key)) + 
+  geom_bar()
+```
+
+```{r}
+safegr %>% 
+  filter(key %in% c("total_visiting", "hometime_sd")) %>% 
+  ggplot(aes(x = decrease_40, fill = key)) + 
   geom_bar()
 ```
 
@@ -29,10 +36,29 @@ safegr %>%
 
 ```{r}
 safegr %>% 
-  filter(key == "recreation_visiting") %>% 
+  filter(key %in% c("total_visiting", "hometime_sd")) %>% 
+  ggplot(aes(x = decrease_50, fill = key)) + 
+  geom_bar() + 
+  theme(legend.title = element_blank()) +
+  xlab("50% decrease in visits")
+```
+
+```{r}
+safegr %>% 
+  filter(!key %in% c("total_visiting", "hometime_sd")) %>% 
   ggplot(aes(x = decrease_70, fill = key)) + 
   geom_bar() + 
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank()) +
+  xlab("70% decrease in visits")
+```
+
+```{r}
+safegr %>% 
+  filter(key %in% c("total_visiting", "hometime_sd")) %>% 
+  ggplot(aes(x = decrease_70, fill = key)) + 
+  geom_bar() + 
+  theme(legend.title = element_blank()) +
+  xlab("70% decrease in visits")
 ```
 
 ```{r}
@@ -43,7 +69,7 @@ xx <- safegr %>%
 
 yy <- safegr %>% 
   filter(key == "hometime_sd") %>% 
-  rename(decrease = decrease_30) %>% 
+  rename(decrease = decrease_40) %>% 
   select(fips, key, decrease)
 
 rbind(xx, yy) %>% 
@@ -54,34 +80,60 @@ rbind(xx, yy) %>%
 ```
 
 ```{r}
-safegr %>% 
-  filter(key == "hometime_sd") %>%  summary 
+county_map <- safegr %>% 
+  filter(key == "school_visits") %>% 
+  mutate(decrease_40 = decrease_40 - as.Date("2020-02-15"), 
+         decrease_40 = as.numeric(decrease_40))
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "decrease_40") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_gradient2(midpoint = 30)
 ```
 
 ```{r}
-safegr %>% 
-  filter(key == "school_visits") %>%  summary 
+county_map <- safegr %>% 
+  filter(key == "college_visits") %>% 
+  mutate(decrease_40 = decrease_40 - as.Date("2020-02-15"), 
+         decrease_40 = as.numeric(decrease_40))
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "decrease_40") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_gradient2(midpoint = 30)
 ```
 
 ```{r}
-safegr %>% 
-  filter(key == "college_visits")%>% summary 
+county_map <- safegr %>% 
+  filter(key == "recreation_visiting") %>% 
+  mutate(decrease_40 = decrease_40 - as.Date("2020-02-15"), 
+         decrease_40 = as.numeric(decrease_40))
+
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "decrease_40") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_gradient2(midpoint = 30)
 ```
 
 ```{r}
-safegr %>% 
-  filter(key == "total_visiting") %>% summary 
-```
+county_map <- safegr %>% 
+  filter(key == "total_visiting") %>% 
+  mutate(decrease_40 = decrease_40 - as.Date("2020-02-15"), 
+         decrease_40 = as.numeric(decrease_40))
 
-```{r}
-safegr %>% 
-  filter(key == "recreation_visiting") %>% summary 
+plot_usmap(data = county_map, include = county_map$fips, 
+           values = "decrease_40") +
+  theme(legend.position = "right") + 
+  theme(legend.title = element_blank()) + 
+  scale_fill_gradient2(midpoint = 30)
 ```
 
 ```{r}
 ## Join interventions and safegr data
 county_desc <- read_feather("./county_desc.feather")
-
 safegr_melt <- safegr %>% 
   pivot_wider(names_from = key, values_from = -c(fips, key)) %>% 
   left_join(county_desc)
@@ -95,9 +147,7 @@ safegr_melt %<>%
            as.numeric(decrease_50_recreation_visiting - restaurants), 
          days_betw_stayhome_decrease = 
            as.numeric(decrease_70_total_visiting - stayhome))
-
 summary(safegr_melt$days_betw_schools_decrease)
 summary(safegr_melt$days_betw_restaurants_decrease)
 summary(safegr_melt$days_betw_stayhome_decrease)
-```
-
+````
