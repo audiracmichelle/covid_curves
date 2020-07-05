@@ -14,6 +14,13 @@ county_descriptors <- county_features %>%
          -cum_cases_per_cap, -cum_deaths_per_cap, 
          -index, -index_desc)
 
+## join with cc
+cc <- read_feather("./cc.feather")
+
+# length(setdiff(x = unique(county_descriptors$fips), y = unique(cc$fips)))
+
+county_descriptors <- left_join(county_descriptors, cc)
+
 ## join with safegr data
 safegr <- read_feather("./safegr.feather")
 
