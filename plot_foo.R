@@ -29,7 +29,7 @@ gg_days_btwn_sampling <- function(county_data) {
   
   p <- county_data %>% 
     ggplot() + 
-    geom_point(aes(x=date, y=deaths)) + 
+    geom_point(aes(x=date, y=y)) + 
     geom_line(aes(x=date, y=fit_med), 
               col = "blue") + 
     geom_ribbon(aes(x=date, ymin=fit_lo, ymax=fit_hi), 
