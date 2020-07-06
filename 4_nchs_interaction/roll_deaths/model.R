@@ -8,7 +8,7 @@ library(rstanarm)
 
 ## Read county_train
 county_train <- read_feather("../../county_train.feather") %>%
-  mutate(t=days_since_thresh)
+  mutate(t=days_since_thresh, t2=days_since_thresh^2)
 
 ## define y
 county_train$y <- county_train$roll_deaths
@@ -22,23 +22,28 @@ options(mc.cores=2)
 model = stan_glmer.nb(
   y ~
     # 1 baseline
-    poly(t, 2) +
-    (poly(t, 2) | fips) +
+    # potential bug in rstan: we use days_since_tresh
+    # instead of t
+    poly(days_since_thresh, 2) +
+    (poly(days_since_thresh, 2) | fips) +
     # 2 interaction
     t:intervention +
-    I(t^2):intervention +
+    t2:intervention +
     # 3 nchs simple
     nchs +
     t:nchs +
-    I(t^2):nchs +
+    t2:nchs +
     # 4 nchs interaction
     t:intervention:nchs +
-    I(t^2):intervention:nchs
+    t2:intervention:nchs  # +
+    # 5 earliness
+    # t:intervention:days_btwn_stayhome_thresh +
+    # t2:intervention:days_btwn_stayhome_thresh
   ,
   offset = log(pop),
   data=county_train,
-  algorithm="mean",
-  iter = 50000,
+  algorithm="meanfield",
+  iter = 100000,
   adapt_iter = 2500,
   QR=TRUE
 )
