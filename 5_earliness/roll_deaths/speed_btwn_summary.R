@@ -138,7 +138,7 @@ for(c in 1:6) {
 ## aggregate by nchs
 nchs_pred <- county_pred %>% 
   group_by(nchs, days_since_thresh) %>% 
-  summarise(log_y = mean(log(1e-2 + county_pred$y / county_pred$pop  * 1e5)), 
+  summarise(log_y = median(log(1e-2 + county_pred$y / county_pred$pop  * 1e5)), 
             fit_mu = NA, fit_med = NA, fit_lo = NA, fit_hi = NA, 
             ctr1_mu = NA, ctr1_med = NA, ctr1_lo = NA, ctr1_hi = NA,
             ctr3_mu = NA, ctr3_med = NA, ctr3_lo = NA, ctr3_hi = NA,)
@@ -148,7 +148,7 @@ county_log_ctr1 = county_ctr1
 county_log_ctr3 = county_ctr3
 for (r in 1:500) {
   county_log_fit[r, ] = log(1e-2 + county_log_fit[r, ] / county_pred$pop * 1e5)
-  county_log_ctr1_fit[r, ] = log(1e-2 + county_log_ctr1[r, ] / county_pred$pop * 1e5)
+  county_log_ctr1[r, ] = log(1e-2 + county_log_ctr1[r, ] / county_pred$pop * 1e5)
   county_log_ctr3[r, ] = log(1e-2 + county_log_ctr3[r, ] / county_pred$pop * 1e5)
 }
 
@@ -186,4 +186,13 @@ for(n in unique(nchs_pred$nchs)){
   }
 }
 
-
+county_plots <- lapply(1:6, 
+                       function(x) nchs_pred %>% 
+                         filter(nchs == x) %>% 
+                         gg_nchs_sampling(n_ = x, up=up, down=down))
+county_plots <- marrangeGrob(county_plots, 
+                             nrow = 6, ncol = 2, 
+                             left = "", top = "")
+ggsave(paste("./speed_btwn_summary/", 
+             "nchs_sampling.pdf", sep = ""), 
+       county_plots, width = 15, height = 25, units = "cm")
