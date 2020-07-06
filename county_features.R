@@ -45,7 +45,8 @@ county_descriptors %<>%
   left_join(nchs)
 #dim(county_descriptors)
 
-rm(list=c("safegr", 
+rm(list=c("cc", 
+          "safegr", 
           "nchs"))
 
 ## create county_deaths_desc
@@ -79,7 +80,7 @@ county_features$threshold_day[county_features$threshold_day == as.Date("2020-12-
 
 county_cases_desc <- county_descriptors %>% 
   left_join(distinct(county_features, fips, threshold_day)) %>%
-  mutate(days_btwn_decrease_thresh = as.numeric(decrease_40_total_visiting - threshold_day))
+  mutate(days_btwn_stayhome_thresh = as.numeric(decrease_40_total_visiting - threshold_day))
 #length(unique(county_cases_desc$fips))
 rm("county_descriptors")
 
