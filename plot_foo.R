@@ -85,22 +85,22 @@ gg_nchs_sampling <- function(nchs_data, n_, up = up, down = down) {
   p <- nchs_data %>% 
     ggplot() + 
     geom_point(aes(x=days_since_thresh, y=log_y)) + 
-    geom_line(aes(x=date, y=fit_med), 
+    geom_line(aes(x=days_since_thresh, y=fit_med), 
               col = "blue") + 
-    geom_ribbon(aes(x=date, ymin=fit_lo, ymax=fit_hi), 
+    geom_ribbon(aes(x=days_since_thresh, ymin=fit_lo, ymax=fit_hi), 
                 alpha= 0.1, fill = "blue") + 
-    geom_line(aes(x=date, y=ctr1_med), 
+    geom_line(aes(x=days_since_thresh, y=ctr1_med), 
               col = "green") + 
-    geom_ribbon(aes(x=date, ymin=ctr1_lo, ymax=ctr1_hi), 
+    geom_ribbon(aes(x=days_since_thresh, ymin=ctr1_lo, ymax=ctr1_hi), 
                 alpha= 0.1, fill = "green") + 
-    geom_line(aes(x=date, y=ctr3_med), 
+    geom_line(aes(x=days_since_thresh, y=ctr3_med), 
               col = "red") + 
-    geom_ribbon(aes(x=date, ymin=ctr3_lo, ymax=ctr3_hi), 
+    geom_ribbon(aes(x=days_since_thresh, ymin=ctr3_lo, ymax=ctr3_hi), 
                 alpha= 0.1, fill = "red") +  
-    geom_vline(aes(xintercept = stayhome), color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + 12), linetype="dotted", color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + 12 + down), linetype="dotted", color = "green") + 
-    geom_vline(aes(xintercept = stayhome + 12 + up), linetype="dotted", color = "red") + 
+    #geom_vline(aes(xintercept = stayhome), color = "blue") + 
+    #geom_vline(aes(xintercept = stayhome + 12), linetype="dotted", color = "blue") + 
+    #geom_vline(aes(xintercept = stayhome + 12 + down), linetype="dotted", color = "green") + 
+    #geom_vline(aes(xintercept = stayhome + 12 + up), linetype="dotted", color = "red") + 
     labs(title = n_, 
          x = "", y = "")
   p
