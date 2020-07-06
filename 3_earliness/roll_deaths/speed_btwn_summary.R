@@ -37,9 +37,9 @@ county_pred3 = county_pred %>%
 ## get posteriors
 
 county_ctr1 <- model %>% 
-  posterior_predict(county_pred1, draws = 50)
+  posterior_predict(county_pred1, draws = 500)
 county_ctr3 <- model %>% 
-  posterior_predict(county_pred3, draws = 50)
+  posterior_predict(county_pred3, draws = 500)
 
 ## generate nchs sampling summaries
 
