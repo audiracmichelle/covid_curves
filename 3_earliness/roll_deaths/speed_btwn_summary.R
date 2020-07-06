@@ -6,7 +6,7 @@ library(gridExtra)
 
 ## Read data
 county_pred <- read_feather("../../county_train.feather") %>%
-  mutate(t = days_since_thresh)
+  mutate(t = days_since_thresh, t2 = days_since_thresh^2)
 model <- readRDS("./model.rds")
 county_fit <- readRDS("./county_fit.rds")
 source("../../plot_foo.R")
@@ -37,9 +37,9 @@ county_pred3 = county_pred %>%
 ## get posteriors
 
 county_ctr1 <- model %>% 
-  posterior_predict(county_pred1, draws = 500)
+  posterior_predict(county_pred1, draws = 50)
 county_ctr3 <- model %>% 
-  posterior_predict(county_pred3, draws = 500)
+  posterior_predict(county_pred3, draws = 50)
 
 ## generate nchs sampling summaries
 

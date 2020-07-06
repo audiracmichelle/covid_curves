@@ -29,16 +29,16 @@ model = stan_glmer.nb(
     # 2 interaction
     t:intervention +
     t2:intervention +
-    # 3 nchs simple
-    nchs +
-    t:nchs +
-    t2:nchs # +
-    # 4 nchs interaction
-    #t:intervention:nchs +
-    #t2:intervention:nchs +
-    # 5 earliness
-    #t:intervention:days_btwn_stayhome_thresh +
-    #t2:intervention:days_btwn_stayhome_thresh
+    # 3 earliness intervention interaction
+    t:intervention:days_btwn_stayhome_thresh +
+    t2:intervention:days_btwn_stayhome_thresh # +
+    # # 4 nchs simple
+    # nchs +
+    # t:nchs +
+    # t2:nchs +
+    # # 5 nchs intervention interaction
+    # t:intervention:nchs +
+    # t2:intervention:nchs
   ,
   offset = log(pop),
   data=county_train,

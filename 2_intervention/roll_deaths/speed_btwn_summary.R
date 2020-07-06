@@ -6,7 +6,7 @@ library(gridExtra)
 
 ## Read data
 county_pred <- read_feather("../../county_train.feather") %>%
-  mutate(t = days_since_thresh)
+  mutate(t = days_since_thresh, t2 = days_since_thresh^2)
 model <- readRDS("./model.rds")
 county_fit <- readRDS("./county_fit.rds")
 source("../../plot_foo.R")
