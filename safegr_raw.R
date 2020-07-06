@@ -98,10 +98,7 @@ rm(list = "sd_metrics")
 rm(list = "visits")
 
 ## Keep only the counties whose threshold has been reached
-source("./county_features.R")
-
-county_features %<>% 
-  filter(!is.na(threshold_day))
+source("./county_features_cases.R")
 #length(unique(county_features$fips))
 
 safegr_raw %<>% 
