@@ -41,6 +41,7 @@ county_ctr1 <- model %>%
 county_ctr3 <- model %>% 
   posterior_predict(county_pred3, draws = 500)
 
+
 ## generate nchs sampling summaries
 
 county_pred %<>% 

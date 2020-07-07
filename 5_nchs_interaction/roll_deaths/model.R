@@ -18,7 +18,7 @@ county_train %<>%
 #dim(county_train)
 
 ## Train model
-options(mc.cores=2)
+options(mc.cores=4)
 model = stan_glmer.nb(
   y ~
     # 1 baseline
@@ -43,9 +43,8 @@ model = stan_glmer.nb(
   offset = log(pop),
   data=county_train,
   algorithm="meanfield",
-  iter = 50000,
-  adapt_iter = 2500,
-  QR=TRUE
+  iter = 150000,
+  adapt_iter = 2500
 )
 
 saveRDS(model, paste("./model.rds", sep = ""))

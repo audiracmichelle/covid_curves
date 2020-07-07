@@ -43,7 +43,7 @@ model = stan_glmer.nb(
   offset = log(pop),
   data=county_train,
   algorithm="meanfield",
-  iter = 100000,
+  iter = 50000,
   adapt_iter = 2500,
   QR=TRUE
 )

@@ -37,9 +37,15 @@ county_pred3 = county_pred %>%
 ## get posteriors
 
 county_ctr1 <- model %>% 
-  posterior_predict(county_pred1, draws = 500)
+  posterior_predict(county_pred1, draws = 50)
 county_ctr3 <- model %>% 
-  posterior_predict(county_pred3, draws = 500)
+  posterior_predict(county_pred3, draws = 50)
+
+
+# anchor random effects to be fixed for posterior
+
+#
+
 
 ## generate nchs sampling summaries
 
