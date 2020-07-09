@@ -13,8 +13,8 @@ source("../../plot_foo.R")
 ## define y
 county_pred %<>% 
   mutate(y = roll_cases) %>% 
-  filter(!is.na(y)) %>% 
-  filter(!is.na(y), days_since_thresh <= 30)
+  filter(!is.na(y), 
+         days_since_thresh <= 30)
 
 ## obtain distribution values from fit sampling
 county_pred %<>% 
@@ -29,13 +29,15 @@ county_pred$intrv_decrease_fit <- county_pred$intrv_decrease
 county_pred$intrv_decrease <- 0
 
 # county_pred %>%
-#   select(fips, date, days_since_thresh, intervention_fit, intervention) %>%
+#   select(fips, date, days_since_thresh, intrv_decrease_fit, intrv_decrease) %>%
 #   arrange(fips, date) %>%
 #   head(1000) %>% view
 
 ## get posteriors
 county_ctr <- model %>% 
   posterior_predict(county_pred, draws = 500)
+
+#table(county_pred$nchs, county_pred$intrv_decrease_fit)
 
 ## generate nchs summaries
 
@@ -48,9 +50,10 @@ county_pred %<>%
 
 for(c in 1:6) {
     fips_ <- county_pred %>% 
-    filter(index == 1, nchs == c) %>% 
-    arrange(desc(pop)) %>% 
-    pull(fips)
+      distinct(fips, nchs, pop) %>% 
+      filter(nchs == c) %>% 
+      arrange(desc(pop)) %>% 
+      pull(fips)
 
   county_plots <- lapply(fips_, 
                          function(x) county_pred %>% 
@@ -67,11 +70,13 @@ for(c in 1:6) {
 
 ## aggregate by nchs
 nchs_pred <- county_pred %>% 
-  group_by(nchs, days_since_thresh) %>% 
+  group_by(nchs) %>% 
+  mutate(days_btwn_decrease_thresh = median(days_btwn_decrease_thresh)) %>% 
+  group_by(nchs, days_since_thresh, days_btwn_decrease_thresh) %>% 
   summarise(y = log(median(1e-2 + county_pred$y / county_pred$pop  * 1e5)), 
             fit_mu = NA, fit_med = NA, fit_lo = NA, fit_hi = NA, 
             ctr1_mu = NA, ctr1_med = NA, ctr1_lo = NA, ctr1_hi = NA,
-            ctr3_mu = NA, ctr3_med = NA, ctr3_lo = NA, ctr3_hi = NA,)
+            ctr3_mu = NA, ctr3_med = NA, ctr3_lo = NA, ctr3_hi = NA)
 
 county_log_fit = county_fit
 county_log_ctr = county_ctr
@@ -109,8 +114,10 @@ for(n in unique(nchs_pred$nchs)){
 
 county_plots <- lapply(1:6, 
                        function(x) nchs_pred %>% 
-                         filter(nchs == x) %>% 
-                         gg_intervention_sampling(name = x))
+                         filter(nchs == x)%>% 
+                         gg_intrv_agg_sampling(name = x, 
+                                           intrv_name = "decrease", 
+                                           lag = 5))
 county_plots <- marrangeGrob(county_plots, 
                              nrow = 6, ncol = 2, 
                              left = "", top = "")
@@ -118,18 +125,33 @@ ggsave(paste("./intervention_0_summary/",
              "nchs_sampling.pdf", sep = ""), 
        county_plots, width = 15, height = 25, units = "cm")
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## modify values to obtain counterfactual
-county_pred$intervention_fit <- county_pred$intervention
-county_pred$intervention <- 1
+county_pred$intrv_decrease_fit <- county_pred$intrv_decrease
+county_pred$intrv_decrease <- 1
 
 # county_pred %>%
-#   select(fips, date, days_since_thresh, intervention_fit, intervention) %>%
+#   select(fips, date, days_since_thresh, intrv_decrease_fit, intrv_decrease) %>%
 #   arrange(fips, date) %>%
 #   head(1000) %>% view
 
 ## get posteriors
 county_ctr <- model %>% 
   posterior_predict(county_pred, draws = 500)
+
+#table(county_pred$nchs, county_pred$intrv_decrease_fit)
 
 ## generate nchs summaries
 
@@ -142,14 +164,16 @@ county_pred %<>%
 
 for(c in 1:6) {
   fips_ <- county_pred %>% 
-    filter(index == 1, nchs == c) %>% 
+    distinct(fips, nchs, pop) %>% 
+    filter(nchs == c) %>% 
     arrange(desc(pop)) %>% 
     pull(fips)
   
   county_plots <- lapply(fips_, 
                          function(x) county_pred %>% 
                            filter(fips == x) %>% 
-                           gg_intervention_sampling())
+                           gg_intrv_sampling(name = x, 
+                                             intrv_name = "decrease", lag = 5))
   county_plots <- marrangeGrob(county_plots, 
                                nrow = 6, ncol = 2, 
                                left = "", top = "")
@@ -160,11 +184,13 @@ for(c in 1:6) {
 
 ## aggregate by nchs
 nchs_pred <- county_pred %>% 
-  group_by(nchs, days_since_thresh) %>% 
+  group_by(nchs) %>% 
+  mutate(days_btwn_decrease_thresh = median(days_btwn_decrease_thresh)) %>% 
+  group_by(nchs, days_since_thresh, days_btwn_decrease_thresh) %>% 
   summarise(y = log(median(1e-2 + county_pred$y / county_pred$pop  * 1e5)), 
             fit_mu = NA, fit_med = NA, fit_lo = NA, fit_hi = NA, 
             ctr1_mu = NA, ctr1_med = NA, ctr1_lo = NA, ctr1_hi = NA,
-            ctr3_mu = NA, ctr3_med = NA, ctr3_lo = NA, ctr3_hi = NA,)
+            ctr3_mu = NA, ctr3_med = NA, ctr3_lo = NA, ctr3_hi = NA)
 
 county_log_fit = county_fit
 county_log_ctr = county_ctr
@@ -202,8 +228,10 @@ for(n in unique(nchs_pred$nchs)){
 
 county_plots <- lapply(1:6, 
                        function(x) nchs_pred %>% 
-                         filter(nchs == x) %>% 
-                         gg_intervention_sampling(name = x))
+                         filter(nchs == x)%>% 
+                         gg_intrv_agg_sampling(name = x, 
+                                               intrv_name = "decrease", 
+                                               lag = 5))
 county_plots <- marrangeGrob(county_plots, 
                              nrow = 6, ncol = 2, 
                              left = "", top = "")
