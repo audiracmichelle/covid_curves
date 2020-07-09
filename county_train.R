@@ -108,10 +108,12 @@ county_train <- county_train[!county_train$fips %in% remove_fips, ]
 
 ## Create intervention dummy covariate
 county_train_cases %<>% 
-  mutate(intervention = (date - decrease_40_total_visiting >= 7) * 1)
+  mutate(intrv_decrease = (date - decrease_40_total_visiting >= 3) * 1, 
+         intrv_stayhome = (date - stayhome >= 12) * 1)
 
 county_train %<>% 
-  mutate(intervention = (date - stayhome >= 12) * 1)
+  mutate(intrv_decrease = (date - decrease_40_total_visiting >= 3) * 1, 
+         intrv_stayhome = (date - stayhome >= 12) * 1)
 
 ## Remove rows with negative days_since_thresh
 

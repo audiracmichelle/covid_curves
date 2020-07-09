@@ -1,10 +1,6 @@
 
-gg_intervention_sampling <- function(county_data) {
-  county_ <- county_data %>% 
-    filter(index == 1) %>% 
-    pull(county)
-  
-  p <- county_data %>% 
+gg_intervention_sampling <- function(data, name, lag) {
+  p <- data %>% 
     ggplot() + 
     geom_point(aes(x=date, y=y)) + 
     geom_line(aes(x=date, y=fit_med), 
@@ -16,8 +12,8 @@ gg_intervention_sampling <- function(county_data) {
     geom_ribbon(aes(x=date, ymin=ctr_lo, ymax=ctr_hi), 
                 alpha= 0.1, fill = "red") + 
     geom_vline(aes(xintercept = stayhome), color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + 12), linetype="dotted", color = "blue") +
-    labs(title = county_, 
+    geom_vline(aes(xintercept = stayhome + lag), linetype="dotted", color = "blue") +
+    labs(title = name, 
          x = "", y = "")
   p
 }
