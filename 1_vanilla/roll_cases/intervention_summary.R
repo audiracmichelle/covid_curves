@@ -63,6 +63,59 @@ for(c in 1:6) {
          county_plots, width = 15, height = 25, units = "cm")
 }
 
+## aggregate by nchs
+nchs_pred <- county_pred %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarise(y = log(median(1e-2 + county_pred$y / county_pred$pop  * 1e5)), 
+            fit_mu = NA, fit_med = NA, fit_lo = NA, fit_hi = NA, 
+            ctr1_mu = NA, ctr1_med = NA, ctr1_lo = NA, ctr1_hi = NA,
+            ctr3_mu = NA, ctr3_med = NA, ctr3_lo = NA, ctr3_hi = NA,)
+
+county_log_fit = county_fit
+county_log_ctr = county_ctr
+for (r in 1:500) {
+  county_log_fit[r, ] = log(1e-2 + county_log_fit[r, ] / county_pred$pop * 1e5)
+  county_log_ctr[r, ] = log(1e-2 + county_log_ctr[r, ] / county_pred$pop * 1e5)
+}
+
+for(n in unique(nchs_pred$nchs)){
+  days <- nchs_pred$days_since_thresh[which(nchs_pred$nchs == n)]
+  for(d in days) {
+    county_idx <- which(county_pred$nchs == n & 
+                          county_pred$days_since_thresh == d)
+    if(length(county_idx) > 1) {
+      fit <- apply(county_log_fit[, county_idx], 1 , mean)
+      ctr <- apply(county_log_ctr[, county_idx], 1 , mean)
+    } else {
+      fit <- county_log_fit[, county_idx]
+      ctr <- county_log_ctr1[, county_idx]
+    }
+    nchs_idx <- which(nchs_pred$nchs == n & 
+                        nchs_pred$days_since_thresh == d)
+    
+    nchs_pred$fit_mu[nchs_idx] <- mean(fit)
+    nchs_pred$fit_med[nchs_idx] <- quantile(fit, 0.5)
+    nchs_pred$fit_lo[nchs_idx] <- quantile(fit, 0.05)
+    nchs_pred$fit_hi[nchs_idx] <- quantile(fit, 0.95)
+    
+    nchs_pred$ctr_mu[nchs_idx] <- mean(ctr)
+    nchs_pred$ctr_med[nchs_idx] <- quantile(ctr, 0.5)
+    nchs_pred$ctr_lo[nchs_idx] <- quantile(ctr, 0.05)
+    nchs_pred$ctr_hi[nchs_idx] <- quantile(ctr, 0.95)
+  }
+}
+
+county_plots <- lapply(1:6, 
+                       function(x) nchs_pred %>% 
+                         filter(nchs == x) %>% 
+                         gg_intervention_sampling(name = x))
+county_plots <- marrangeGrob(county_plots, 
+                             nrow = 6, ncol = 2, 
+                             left = "", top = "")
+ggsave(paste("./intervention_0_summary/", 
+             "nchs_sampling.pdf", sep = ""), 
+       county_plots, width = 15, height = 25, units = "cm")
+
 ## modify values to obtain counterfactual
 county_pred$intervention_fit <- county_pred$intervention
 county_pred$intervention <- 1
@@ -102,3 +155,56 @@ for(c in 1:6) {
                "sampling_nchs_", c, ".pdf", sep = ""), 
          county_plots, width = 15, height = 25, units = "cm")
 }
+
+## aggregate by nchs
+nchs_pred <- county_pred %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarise(y = log(median(1e-2 + county_pred$y / county_pred$pop  * 1e5)), 
+            fit_mu = NA, fit_med = NA, fit_lo = NA, fit_hi = NA, 
+            ctr1_mu = NA, ctr1_med = NA, ctr1_lo = NA, ctr1_hi = NA,
+            ctr3_mu = NA, ctr3_med = NA, ctr3_lo = NA, ctr3_hi = NA,)
+
+county_log_fit = county_fit
+county_log_ctr = county_ctr
+for (r in 1:500) {
+  county_log_fit[r, ] = log(1e-2 + county_log_fit[r, ] / county_pred$pop * 1e5)
+  county_log_ctr[r, ] = log(1e-2 + county_log_ctr[r, ] / county_pred$pop * 1e5)
+}
+
+for(n in unique(nchs_pred$nchs)){
+  days <- nchs_pred$days_since_thresh[which(nchs_pred$nchs == n)]
+  for(d in days) {
+    county_idx <- which(county_pred$nchs == n & 
+                          county_pred$days_since_thresh == d)
+    if(length(county_idx) > 1) {
+      fit <- apply(county_log_fit[, county_idx], 1 , mean)
+      ctr <- apply(county_log_ctr[, county_idx], 1 , mean)
+    } else {
+      fit <- county_log_fit[, county_idx]
+      ctr <- county_log_ctr1[, county_idx]
+    }
+    nchs_idx <- which(nchs_pred$nchs == n & 
+                        nchs_pred$days_since_thresh == d)
+    
+    nchs_pred$fit_mu[nchs_idx] <- mean(fit)
+    nchs_pred$fit_med[nchs_idx] <- quantile(fit, 0.5)
+    nchs_pred$fit_lo[nchs_idx] <- quantile(fit, 0.05)
+    nchs_pred$fit_hi[nchs_idx] <- quantile(fit, 0.95)
+    
+    nchs_pred$ctr_mu[nchs_idx] <- mean(ctr)
+    nchs_pred$ctr_med[nchs_idx] <- quantile(ctr, 0.5)
+    nchs_pred$ctr_lo[nchs_idx] <- quantile(ctr, 0.05)
+    nchs_pred$ctr_hi[nchs_idx] <- quantile(ctr, 0.95)
+  }
+}
+
+county_plots <- lapply(1:6, 
+                       function(x) nchs_pred %>% 
+                         filter(nchs == x) %>% 
+                         gg_intervention_sampling(name = x))
+county_plots <- marrangeGrob(county_plots, 
+                             nrow = 6, ncol = 2, 
+                             left = "", top = "")
+ggsave(paste("./intervention_1_summary/", 
+             "nchs_sampling.pdf", sep = ""), 
+       county_plots, width = 15, height = 25, units = "cm")
