@@ -1,5 +1,5 @@
 
-gg_intervention_sampling <- function(data, name, lag) {
+gg_intrv_sampling <- function(data, name, intrv_name, lag) {
   p <- data %>% 
     ggplot() + 
     geom_point(aes(x=date, y=y)) + 
@@ -11,10 +11,15 @@ gg_intervention_sampling <- function(data, name, lag) {
               col = "red") + 
     geom_ribbon(aes(x=date, ymin=ctr_lo, ymax=ctr_hi), 
                 alpha= 0.1, fill = "red") + 
-    geom_vline(aes(xintercept = stayhome), color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + lag), linetype="dotted", color = "blue") +
+    xlim(as.Date("2020-03-01"), as.Date("2020-04-30"))
+
+  if(intrv_name == "decrease") {
+    p <- p + 
+    geom_vline(aes(xintercept = decrease_40_total_visiting), color = "blue") + 
+    geom_vline(aes(xintercept = decrease_40_total_visiting + lag), linetype="dotted", color = "blue") +
     labs(title = name, 
          x = "", y = "")
+  }
   p
 }
 
