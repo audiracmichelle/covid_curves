@@ -50,17 +50,19 @@ county_train %<>%
 #   ungroup()
 #summary(county_train$cum_cases)
 
+#---do not do this
 ## Include only up to May 15
 #sum(is.na(county_train_cases$threshold_day[county_train_cases$index == 1]))
-county_train_cases %<>% 
-  filter(threshold_day <= as.Date("2020-05-15"),
-         date <= as.Date("2020-05-15"))
-
+# max(county_train_cases$date)
+# county_train_cases %<>% 
+#   filter(threshold_day <= as.Date("2020-05-15"),
+#          date <= as.Date("2020-05-15"))
+#
 #sum(is.na(county_train$threshold_day[county_train$index == 1]))
-county_train %<>% 
-  filter(!is.na(threshold_day), 
-         threshold_day <= as.Date("2020-05-15"),
-         date <= as.Date("2020-05-15"))
+# county_train %<>% 
+#   filter(!is.na(threshold_day), 
+#          threshold_day <= as.Date("2020-05-15"),
+#          date <= as.Date("2020-05-15"))
 
 ## Require at least 10 days since threshold
 remove_fips <- county_train_cases %>% 
@@ -88,7 +90,7 @@ cum_cases_ <- county_train_cases %>%
 remove_fips <- county_train_cases %>% 
   group_by(fips) %>% 
   summarise(cum_cases = max(cum_cases)) %>% 
-  filter(cum_cases < quantile(cum_cases_, 0.6)) %>% 
+  filter(cum_cases < quantile(cum_cases_, 0.5)) %>% 
   pull(fips)
 county_train_cases <- county_train_cases[!county_train_cases$fips %in% remove_fips, ]
 #length(unique(county_train_cases$fips))
@@ -101,22 +103,12 @@ cum_deaths_ <- county_train %>%
 remove_fips <- county_train %>% 
   group_by(fips) %>% 
   summarise(cum_deaths = max(cum_deaths)) %>% 
-  filter(cum_deaths < quantile(cum_deaths_, 0.6)) %>% 
+  filter(cum_deaths < quantile(cum_deaths_, 0.5)) %>% 
   pull(fips)
 county_train <- county_train[!county_train$fips %in% remove_fips, ]
 #length(unique(county_train$fips))
 
-## Create intervention dummy covariate
-county_train_cases %<>% 
-  mutate(intrv_decrease = (date - decrease_40_total_visiting >= 5) * 1, 
-         intrv_stayhome = (date - stayhome >= 12) * 1)
-
-county_train %<>% 
-  mutate(intrv_decrease = (date - decrease_40_total_visiting >= 5) * 1, 
-         intrv_stayhome = (date - stayhome >= 12) * 1)
-
 ## Remove rows with negative days_since_thresh
-
 # county_train_cases$fips[county_train_cases$days_since_thresh < 0]
 # county_train_cases %>% 
 #   filter(fips == "06073") %>% 
@@ -132,25 +124,21 @@ county_train_cases %<>%
 county_train %<>%
   filter(days_since_thresh >= 0)
 
+#---do not do this
 ## Remove counties that did not put the intervention in place
 # county_train_cases %>%
 #   filter(index == 1) %>%
 #   pull(decrease_40_total_visiting) %>% is.na %>% sum
-county_train_cases %<>%
-  filter(!is.na(decrease_40_total_visiting))
+# county_train_cases %<>%
+#   filter(!is.na(decrease_40_total_visiting))
 #length(unique(county_train_cases$fips))
-
+#
 # county_train %>%
 #   filter(index == 1) %>%
 #   pull(stayhome) %>% is.na %>% sum
-county_train %<>%
-  filter(!is.na(stayhome))
+# county_train %<>%
+#   filter(!is.na(stayhome))
 #length(unique(county_train$fips))
-
-# county_train_cases %>%
-#   filter(state == "New York",
-#          grepl("county", county)) %>% 
-#   arrange(fips, date) %>% view
 
 ## Create index columns
 county_train_cases %<>% 
@@ -169,11 +157,10 @@ county_train %<>%
   ungroup()
 county_train <- arrange(county_train, fips, index)
 
-## Make days_btwn_stayhome categorical 
-# county_train %<>%
-#   mutate(speed_btwn_stayhome_thresh = cut(days_btwn_stayhome_thresh,
-#                                           c(-Inf, -10, -3, 3, Inf)))
-# county_train$speed_btwn_copy <- county_train$speed_btwn_stayhome_thresh
+# county_train_cases %>%
+#   filter(state == "New York",
+#          grepl("county", county)) %>% 
+#   arrange(fips, date) %>% view
 
 rm(list=c("cum_cases_",
           "cum_deaths_", 
