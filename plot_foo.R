@@ -32,6 +32,30 @@ gg_intrv_sampling <- function(data, name, decrease, stayhome) {
   p
 }
 
+gg_intrv_agg_sampling <- function(data, name, intrv_name, lag) {
+  p <- data %>% 
+    ggplot() + 
+    geom_point(aes(x=days_since_thresh, y=y)) + 
+    geom_line(aes(x=days_since_thresh, y=fit_med), 
+              col = "blue") + 
+    geom_ribbon(aes(x=days_since_thresh, ymin=fit_lo, ymax=fit_hi), 
+                alpha= 0.1, fill = "blue") + 
+    geom_line(aes(x=days_since_thresh, y=ctr_med), 
+              col = "red") + 
+    geom_ribbon(aes(x=days_since_thresh, ymin=ctr_lo, ymax=ctr_hi), 
+                alpha= 0.1, fill = "red") + 
+    xlim(-5, 40)
+  
+  if(intrv_name == "decrease") {
+    p <- p + 
+      geom_vline(aes(xintercept = days_btwn_decrease_thresh), color = "blue") + 
+      geom_vline(aes(xintercept = days_btwn_decrease_thresh + lag), linetype="dotted", color = "blue") +
+      labs(title = name, 
+           x = "", y = "")
+  }
+  p
+}
+
 gg_days_btwn_sampling <- function(county_data, up, down) {
   county_ <- county_data %>% 
     filter(index == 1) %>% 
