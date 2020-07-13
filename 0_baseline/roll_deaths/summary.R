@@ -44,8 +44,8 @@ for(c in 1:6) {
                            filter(fips == x) %>% 
                            gg_fit_sampling(
                            name = name_$name[name_$fips == x], 
-                           lag_decrease = 5, 
-                           lag_stayhome = 5))
+                           lag_decrease = 12, 
+                           lag_stayhome = 12))
   county_plots <- marrangeGrob(county_plots, 
                                nrow = 6, ncol = 2, 
                                left = "", top = "")
