@@ -1,5 +1,32 @@
+gg_fit_sampling <- function(data, name, lag_decrease = NULL, lag_stayhome = NULL) {
+  p <- data %>% 
+    ggplot() + 
+    geom_point(aes(x=date, y=y)) + 
+    geom_line(aes(x=date, y=fit_med), 
+              col = "blue") + 
+    geom_ribbon(aes(x=date, ymin=fit_lo, ymax=fit_hi), 
+                alpha= 0.1, fill = "blue") + 
+    labs(title = name, 
+         x = "", y = "") +
+    xlim(as.Date("2020-02-15"), as.Date("2020-06-30")) 
 
-gg_intrv_sampling <- function(data, name, decrease, stayhome) {
+  if(!is.null(lag_decrease)) {
+    p <- p + 
+    geom_vline(aes(xintercept = decrease_40_total_visiting), color = "purple") + 
+    geom_vline(aes(xintercept = decrease_40_total_visiting + lag_decrease), linetype="dotted", color = "purple")
+  }
+
+  if(!is.null(lag_stayhome)) {
+    p <- p + 
+    geom_vline(aes(xintercept = stayhome), color = "blue") + 
+    geom_vline(aes(xintercept = stayhome + lag_stayhome), linetype="dotted", color = "blue")
+  }
+
+  p
+
+}
+
+gg_intrv_sampling <- function(data, name, lag_decrease = NULL, lag_stayhome = NULL) {
   p <- data %>% 
     ggplot() + 
     geom_point(aes(x=date, y=y)) + 
@@ -11,25 +38,24 @@ gg_intrv_sampling <- function(data, name, decrease, stayhome) {
               col = "red") + 
     geom_ribbon(aes(x=date, ymin=ctr_lo, ymax=ctr_hi), 
                 alpha= 0.1, fill = "red") + 
+    labs(title = name, 
+         x = "", y = "") + 
     xlim(as.Date("2020-03-01"), as.Date("2020-04-30"))
 
-  if(decrease) {
+  if(!is.null(lag_decrease)) {
     p <- p + 
     geom_vline(aes(xintercept = decrease_40_total_visiting), color = "purple") + 
-    geom_vline(aes(xintercept = decrease_40_total_visiting + 5), linetype="dotted", color = "purple") +
-    labs(title = name, 
-         x = "", y = "")
+    geom_vline(aes(xintercept = decrease_40_total_visiting + lag_decrease), linetype="dotted", color = "purple")
   }
 
-  if(stayhome) {
+  if(!is.null(lag_stayhome)) {
     p <- p + 
     geom_vline(aes(xintercept = stayhome), color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + 12), linetype="dotted", color = "blue") +
-    labs(title = name, 
-         x = "", y = "")
+    geom_vline(aes(xintercept = stayhome + lag_stayhome), linetype="dotted", color = "blue")
   }
 
   p
+
 }
 
 gg_intrv_agg_sampling <- function(data, name, intrv_name, lag) {
