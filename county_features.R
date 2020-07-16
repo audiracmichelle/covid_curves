@@ -28,7 +28,7 @@ safegr <- read_feather("./safegr.feather")
 
 county_descriptors %<>% 
   left_join(safegr %>% 
-              select(fips, key, baseline, decrease_40) %>% 
+              select(fips, key, baseline, decrease_40, decrease_50) %>% 
               filter(key %in% c("school_visits", 
                                 "recreation_visiting", 
                                 "total_visiting")) %>% 
