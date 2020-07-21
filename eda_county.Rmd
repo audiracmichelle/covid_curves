@@ -117,6 +117,7 @@ source("./county_raw.R")
 ```
 
 ```{r}
+min(county_raw$date, na.rm = TRUE)
 max(county_raw$date, na.rm = TRUE)
 ```
 
@@ -126,6 +127,8 @@ max(county_raw$date, na.rm = TRUE)
 county_map <- county_raw %>% 
   distinct(fips, county) %>% 
   mutate(no_counts = as.factor(!is.na(county)))
+
+table(county_map$no_counts)
 
 plot_usmap(data = county_map, values = "no_counts") +
   theme(legend.position = "right") + 
@@ -181,6 +184,8 @@ source("./county_features.R")
 county_map <- county_deaths_desc %>% 
   mutate(no_thresh = as.factor(is.na(threshold_day)))
 
+table(county_map$no_thresh)
+
 plot_usmap(data = county_map, 
            include = county_map$fips, 
            values = "no_thresh") +
@@ -206,7 +211,7 @@ plot_usmap(data = county_cases_desc,
 
 ```{r}
 county_cases_desc %>% 
-  mutate(days_betwn_decrease_stayhome = as.numeric(decrease_40_total_visiting - stayhome)) %>% 
+  mutate(days_betwn_decrease_stayhome = as.numeric(decrease_50_total_visiting - stayhome)) %>% 
   ggplot() +
   geom_density(aes(x = days_betwn_decrease_stayhome, fill = nchs), alpha = 0.5)
 
@@ -312,11 +317,6 @@ plot_usmap(data = county_deaths_desc, include = county_deaths_desc$fips,
   theme(legend.title = element_blank()) + 
   scale_fill_gradient2(low = "blue", midpoint = 0, high = "red")
 ```
-
-```{r}
-
-```
-
 
 ### safegr
 
@@ -470,12 +470,29 @@ county_cases_desc %>%
   geom_density(aes(x = ethnic_per_cap, fill = nchs), alpha = 0.5)
 ```
 
+```{r}
+cum_deaths_ <- county_train %>% 
+  group_by(fips) %>% 
+  summarise(cum_deaths = max(cum_deaths)) %>% 
+  ungroup() %>% pull(cum_deaths)
+
+quantile(cum_deaths_, 0.5)
+```
+
 ## county_train
 
 ```{r}
 county_train_cases <- read_feather("./county_train_cases.feather")
 county_train <- read_feather("./county_train.feather")
 ```
+
+```{r}
+xx <- county_train %>% filter(index == 1)
+table(is.na(xx$stayhome))
+table(is.na(xx$decrease_50_total_visiting))
+table(is.na(xx$stayhome) | is.na(xx$decrease_50_total_visiting))
+```
+
 
 ```{r}
 county_train_cases %>% 

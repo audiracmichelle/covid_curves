@@ -58,7 +58,7 @@ gg_intrv_sampling <- function(data, name, lag_decrease = NULL, lag_stayhome = NU
 
 }
 
-gg_days_btwn_sampling <- function(data, name, up, down, lag) {
+gg_days_btwn_sampling <- function(data, name, up, down, lag_decrease = NULL, lag = NULL) {
   p <- data %>% 
     ggplot() + 
     geom_point(aes(x=date, y=y)) + 
@@ -74,14 +74,27 @@ gg_days_btwn_sampling <- function(data, name, up, down, lag) {
               col = "green") + 
       geom_ribbon(aes(x=date, ymin=ctr3_lo, ymax=ctr3_hi), 
                 alpha= 0.1, fill = "green") +  
-    geom_vline(aes(xintercept = stayhome), color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + lag), linetype="dotted", color = "blue") + 
-    geom_vline(aes(xintercept = stayhome + lag + down), linetype="dotted", color = "green") + 
-    geom_vline(aes(xintercept = stayhome + lag + up), linetype="dotted", color = "red") + 
-    labs(title = name, 
-         x = "", y = "") + 
-    xlim(as.Date("2020-03-01"), as.Date("2020-04-30"))
+      labs(title = name, x = "", y = "") + 
+      xlim(as.Date("2020-03-01"), as.Date("2020-04-30"))
+    
+    if(!is.null(lag_decrease)) {
+      p <- p + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting), color = "purple") + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting + lag_decrease), linetype="dotted", color = "purple") + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting + lag_decrease + down), linetype="dotted", color = "green") + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting + lag_decrease + up), linetype="dotted", color = "red")
+    }
+    
+    if(!is.null(lag)) {
+      p <- p + 
+      geom_vline(aes(xintercept = stayhome), color = "blue") + 
+      geom_vline(aes(xintercept = stayhome + lag), linetype="dotted", color = "blue") + 
+      geom_vline(aes(xintercept = stayhome + lag + down), linetype="dotted", color = "green") + 
+      geom_vline(aes(xintercept = stayhome + lag + up), linetype="dotted", color = "red")
+    }
+
   p
+
 }
 
 gg_covar_sampling <- function(data, name, covar_val, lag) {

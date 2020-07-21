@@ -94,7 +94,7 @@ for(c in 1:6) {
                            name = name_$name[name_$fips == x], 
                            up = up, 
                            down = down, 
-                           lag = 12))
+                           lag_decrease = 12))
   county_plots <- marrangeGrob(county_plots, 
                                nrow = 6, ncol = 2, 
                                left = "", top = "")
