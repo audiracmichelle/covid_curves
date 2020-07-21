@@ -10,8 +10,6 @@ model <- readRDS("./model.rds")
 county_fit <- readRDS("./county_fit.rds")
 source("../../plot_foo.R")
 
-up = 7
-down = -14
 
 ## define y
 #length(unique(county_pred$fips))
@@ -44,36 +42,32 @@ county_pred %<>%
     fit_hi = apply(county_fit, 2, quantile, probs = 0.95))
 
 ## modify values to obtain counterfactual
-county_pred1 = county_pred %>% 
-  mutate(days_btwn_decrease_thresh = days_btwn_decrease_thresh + up) %>%
-  mutate(intrv_decrease = as.numeric(date >= decrease_50_total_visiting + 12 + up))
-
-county_pred3 = county_pred %>% 
-  mutate(days_btwn_decrease_thresh = days_btwn_decrease_thresh + down) %>%
-  mutate(intrv_decrease = as.numeric(date >= decrease_50_total_visiting + 12 + down))
+county_pred$intrv_decrease <- 0
+county_pred$intrv_stayhome <- 0
 
 # not sure what should go here
-county_pred1$days_since_intrv_decrease <- county_pred1$days_since_intrv_decrease - up
-county_pred3$days_since_intrv_decrease <- county_pred3$days_since_intrv_decrease - down
+county_pred$days_since_intrv_decrease <- county_pred$days_since_thresh
+county_pred$days_since_intrv_stayhome <- county_pred$days_since_thresh
+
+# county_pred %>%
+#   select(fips, date, days_since_thresh, intrv_decrease_fit, intrv_decrease) %>%
+#   arrange(fips, date) %>%
+#   head(1000) %>% view
 
 ## get posteriors
-county_ctr1 <- model %>% 
-  posterior_predict(county_pred1, draws = 500)
-county_ctr3 <- model %>% 
-  posterior_predict(county_pred3, draws = 500)
+county_ctr <- model %>% 
+  posterior_predict(county_pred, draws = 500)
+
+#table(county_pred$nchs, county_pred$intrv_decrease_fit)
 
 ## generate nchs summaries
 
 county_pred %<>% 
   mutate(
-    ctr1_mu = apply(county_ctr1, 2, mean),
-    ctr1_med = apply(county_ctr1, 2, quantile, probs = 0.5), # use posterior median to hand skewness
-    ctr1_lo = apply(county_ctr1, 2, quantile, probs = 0.05),
-    ctr1_hi = apply(county_ctr1, 2, quantile, probs = 0.95),
-    ctr3_mu = apply(county_ctr3, 2, mean),
-    ctr3_med = apply(county_ctr3, 2, quantile, probs = 0.5), # use posterior median to hand skewness
-    ctr3_lo = apply(county_ctr3, 2, quantile, probs = 0.05),
-    ctr3_hi = apply(county_ctr3, 2, quantile, probs = 0.95))
+    ctr_mu = apply(county_ctr, 2, mean),
+    ctr_med = apply(county_ctr, 2, quantile, probs = 0.5), # use posterior median to hand skewness
+    ctr_lo = apply(county_ctr, 2, quantile, probs = 0.05),
+    ctr_hi = apply(county_ctr, 2, quantile, probs = 0.95))
 
 for(c in 1:6) {
     fips_ <- county_pred %>% 
@@ -90,15 +84,14 @@ for(c in 1:6) {
   county_plots <- lapply(fips_, 
                          function(x) county_pred %>% 
                            filter(fips == x) %>% 
-                           gg_days_btwn_sampling(
+                           gg_intrv_sampling(
                            name = name_$name[name_$fips == x], 
-                           up = up, 
-                           down = down, 
-                           lag_decrease = 12))
+                           lag_decrease = 12, 
+                           lag_stayhome = 12))
   county_plots <- marrangeGrob(county_plots, 
                                nrow = 6, ncol = 2, 
                                left = "", top = "")
-  ggsave(paste("./days_btwn_summary/", 
+  ggsave(paste("./intervention_0_summary/", 
                "sampling_nchs_", c, ".pdf", sep = ""), 
          county_plots, width = 15, height = 25, units = "cm")
 }
