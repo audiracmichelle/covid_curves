@@ -5,26 +5,12 @@ library(rstanarm)
 library(gridExtra)
 
 ## Read data
-county_pred <- read_feather("../../county_train.feather")
 model <- readRDS("./model.rds")
 county_fit <- readRDS("./county_fit.rds")
 source("../../plot_foo.R")
 
-## define y
-#length(unique(county_pred$fips))
-county_pred %<>%  
-  mutate(y = roll_deaths,  
-         intrv_stayhome = (date - stayhome >= 12) * 1,  
-         days_since_intrv_stayhome = as.numeric(date - stayhome - 12 + 1), 
-         age_20_44 = log(1e4 * age_20_44 / pop), 
-         age_45_64 = log(1e4 * age_45_64 / pop), 
-         age_65_plus = log(1e4 * age_65_plus / pop), 
-         white = log(1e4 * white / pop), 
-         black = log(1e4 * black / pop), 
-         hispanic = log(1e4 * hispanic / pop)) %>%
-    filter(!is.na(y), 
-         !is.na(stayhome), 
-         days_since_intrv_stayhome <= 17)
+## Read county_train
+county_pred <- read_feather("../../county_train_stayhome.feather")
 #length(unique(county_pred$fips))
 
 ## obtain distribution values from fit sampling
@@ -51,6 +37,8 @@ county_pred$days_since_intrv_stayhome <- county_pred$days_since_thresh
 ## get posteriors
 county_ctr <- model %>% 
   posterior_predict(county_pred, draws = 500)
+
+saveRDS(county_ctr, "./county_ctr.rds")
 
 #table(county_pred$nchs, county_pred$intrv_decrease_fit)
 
@@ -87,5 +75,64 @@ for(c in 1:6) {
                                left = "", top = "")
   ggsave(paste("./intervention_0_summary/", 
                "sampling_nchs_", c, ".pdf", sep = ""), 
+         county_plots, width = 15, height = 25, units = "cm")
+}
+
+## generate cumulative effect summary
+county_fit_effect <- matrix(nrow = 500, ncol = 0)
+county_ctr_effect <- matrix(nrow = 500, ncol = 0)
+for(f in unique(county_pred$fips)){
+  county_idx <- which(county_pred$fips == f)
+  fit <- county_fit[, county_idx]
+  fit <- t(apply(fit, 1, cumsum))
+  ctr <- county_ctr[, county_idx]
+  ctr <- t(apply(ctr, 1, cumsum))
+  
+  county_fit_effect <- cbind(county_fit_effect, fit)
+  county_ctr_effect <- cbind(county_ctr_effect, ctr)
+}
+
+county_pred %<>% 
+  group_by(fips) %>% 
+  mutate(y_eff = cumsum(y)) %>%
+  ungroup()
+
+county_pred %<>% 
+  mutate(
+    fit_mu_eff = apply(county_fit_effect, 2, mean),
+    fit_med_eff = apply(county_fit_effect, 2, quantile, probs = 0.5), # use posterior median to hand skewness
+    fit_lo_eff = apply(county_fit_effect, 2, quantile, probs = 0.05),
+    fit_hi_eff = apply(county_fit_effect, 2, quantile, probs = 0.95))
+
+county_pred %<>% 
+  mutate(
+    ctr_mu_eff = apply(county_ctr_effect, 2, mean),
+    ctr_med_eff = apply(county_ctr_effect, 2, quantile, probs = 0.5), # use posterior median to hand skewness
+    ctr_lo_eff = apply(county_ctr_effect, 2, quantile, probs = 0.05),
+    ctr_hi_eff = apply(county_ctr_effect, 2, quantile, probs = 0.95))
+
+for(c in 1:6) {
+  fips_ <- county_pred %>% 
+    distinct(fips, nchs, pop) %>% 
+    filter(nchs == c) %>% 
+    arrange(desc(pop)) %>% 
+    pull(fips)
+  
+  name_ <- county_pred %>%
+    filter(fips %in% fips_) %>% 
+    distinct(fips, state, county) %>%
+    mutate(name = paste(state, county))
+  
+  county_plots <- lapply(fips_, 
+                         function(x) county_pred %>% 
+                           filter(fips == x) %>% 
+                           gg_intrv_effect(
+                             name = name_$name[name_$fips == x],  
+                             lag_decrease = 12))
+  county_plots <- marrangeGrob(county_plots, 
+                               nrow = 6, ncol = 2, 
+                               left = "", top = "")
+  ggsave(paste("./intervention_0_summary/", 
+               "effect_nchs_", c, ".pdf", sep = ""), 
          county_plots, width = 15, height = 25, units = "cm")
 }

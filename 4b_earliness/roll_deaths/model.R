@@ -4,27 +4,8 @@ library(feather)
 library(rstanarm)
 
 ## Read county_train
-county_train <- read_feather("../../county_train.feather")
-
-## define y
+county_train <- read_feather("../../county_train_stayhome.feather")
 #length(unique(county_train$fips))
-county_train %<>%  
-  mutate(y = roll_deaths,  
-         intrv_stayhome = (date - stayhome >= 12) * 1,  
-         days_since_intrv_stayhome = as.numeric(date - stayhome - 12 + 1), 
-         age_45_64 = log(1e4 * age_45_64 / pop), 
-         age_65_plus = log(1e4 * age_65_plus / pop), 
-         black = log(1e4 * black / pop), 
-         hispanic = log(1e4 * hispanic / pop)) %>%
-    filter(!is.na(y), 
-         !is.na(stayhome), 
-         days_since_intrv_stayhome <= 17)
-#length(unique(county_train$fips))
-
-# county_train %>%
-#   select(fips, date, days_since_thresh, intrv_stayhome) %>%
-#   arrange(fips, date) %>%
-#   head(1000) %>% view
 
 ## Train model
 model = stan_glmer.nb(
