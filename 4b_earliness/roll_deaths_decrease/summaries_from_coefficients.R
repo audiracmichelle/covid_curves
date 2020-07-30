@@ -242,7 +242,7 @@ main = function() {
       filter(t <= 30)
     
     # === late intervention ===
-    up = 7
+    up = 10
     
     # Summary for intervention as observed
     cat("computing curve summaries by fips late intervention...\n")
@@ -286,7 +286,7 @@ main = function() {
       filter(t <= 30)
     
     # === early intervention ===
-    down = -14
+    down = -10
     
     # Summary for intervention as observed
     cat("computing curve summaries by fips early intervention...\n")
@@ -339,8 +339,8 @@ main = function() {
       rename(NCHS=nchs) %>% 
       mutate(
         median=median/log(10) + 6,
-        q05=pmin(pmax(q05/log(10) + 6, -2), 1),
-        q95=pmin(pmax(q95/log(10) + 6, -2), 1)
+        q05=pmin(pmax(q05/log(10) + 6, -1), 1.5),
+        q95=pmin(pmax(q95/log(10) + 6, -1), 1.5)
       )
     
     ggplot(plotdata_all) +
@@ -351,17 +351,17 @@ main = function() {
       ) +
       facet_wrap(~ NCHS, labeller=label_both) +
       labs(fill="Timing",
-           x="Days since threhsold",
+           x="Days since threshold",
            y="Daily deaths per 1 million") +
       guides(color=FALSE, fill=FALSE) +
       scale_y_continuous(
-        limits=c(-2, 1.1),
-        breaks=c(-2, -1, 0, 1),
-        labels=c("0.01", "0.1", "0", "10")
+        limits=c(-1, 1.5),
+        breaks=c(-1, 0, 1),
+        labels=c("0.1", "1", "10")
       ) +
       theme_minimal_hgrid() +
-      scale_color_manual(values=c("blue", "green", "orange")) +
-      scale_fill_manual(values=c("blue", "green", "orange")) +
+      scale_color_manual(values=c("#0072B2", "#009E73", "#D55E00")) +
+      scale_fill_manual(values=c("#0072B2", "#009E73", "#D55E00")) +
       theme(legend.position = "top")
   
   ggsave(
