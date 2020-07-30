@@ -5,7 +5,12 @@ library(rstanarm)
 options(mc.cores=4)
 
 ## Read county_train
-county_train <- read_feather("../../county_train_decrease.feather")
+county_train <- read_feather("../../county_train_decrease.feather") %>%
+  select(days_since_thresh, y, nchs, college, age_65_plus, black,
+         hispanic, fips, days_since_intrv_decrease, days_since_intrv_stayhome,
+         intrv_decrease, intrv_stayhome, days_btwn_decrease_thresh,
+         days_btwn_stayhome_thresh, pop) %>%
+  na.omit()
 #length(unique(county_train$fips))
 
 ## Train model
