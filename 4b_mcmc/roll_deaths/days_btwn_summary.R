@@ -4,8 +4,8 @@ library(feather)
 library(rstanarm)
 library(gridExtra)
 
-up = 7
-down = -14
+up = 10
+down = -10
 
 ## Read data
 model <- readRDS("./model.rds")
