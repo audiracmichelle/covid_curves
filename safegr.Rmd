@@ -283,7 +283,6 @@ county_deaths_desc_ %>%
   select(stayhome, roll_decrease_on_stayhome, decrease_on_stayhome)
 ```
 
-
 ```{r}
 safegr %>%
   distinct(fips, key,
@@ -299,9 +298,9 @@ county_train_decrease <- read_feather('./county_train_decrease.feather')
 
 ```{r}
 xx <- county_train_stayhome %>% 
-  distinct(fips, nchs, stayhome)
+  distinct(fips, state, county, nchs, pop, stayhome)
 yy <- county_train_decrease %>% 
-  distinct(fips, nchs, stayhome)
+  distinct(fips, state, county, nchs, pop, stayhome)
 length(unique(c(xx$fips, yy$fips)))
 zz <- full_join(xx, yy)
 table(zz$nchs)
@@ -333,4 +332,67 @@ zz %>%
               select(fips, date, min_relative)) %>% 
   ggplot() +
   geom_density(aes(x = min_relative, col = nchs))
+
+zz %>% 
+  rename(date = stayhome) %>% 
+  left_join(safegr %>% 
+              filter(key == "total_visiting") %>% 
+              select(fips, date, baseline)) %>% 
+  mutate(basel_percap = baseline / pop) %>%
+  ggplot() +
+  geom_density(aes(x = basel_percap, col = nchs))
 ```
+
+```{r}
+# After decrease, rebound statistics
+safegr %<>% 
+  filter(key == "total_visiting", 
+         date >= decrease_50)
+
+summary(safegr$decrease_50)
+summary(safegr$date)
+```
+
+```{r}
+safegr %>% 
+  group_by(fips) %>% 
+  summarise(max_relative = max(relative_week)) %>% 
+  ungroup() %>% 
+  arrange(max_relative)
+```
+
+```{r}
+safegr$rebound_40 <- safegr$date
+safegr$rebound_40[safegr$roll_relative_week > 0.6] <- as.Date("2019-12-31")
+
+safegr %<>% 
+  group_by(fips) %>% 
+  mutate(rebound_40 = max(rebound_40)) %>% 
+  ungroup() %>% 
+  mutate(days_btwn_50_40 = as.numeric(rebound_40 - decrease_50))
+
+summary(safegr$rebound_40)
+summary(safegr$days_btwn_50_40)
+```
+
+```{r}
+zz %>% 
+  left_join(safegr) %>% 
+  distinct(fips, state, county, nchs, rebound_40) %>% 
+  arrange(rebound_40)
+```
+
+```{r}
+safegr %>% 
+  filter(fips == 13299) %>% 
+  ggplot() +
+  geom_line(aes(x = date, roll_relative_week))
+```
+
+```{r}
+zz %>% 
+  left_join(distinct(safegr, fips, days_btwn_50_40)) %>%
+  ggplot() +
+  geom_histogram(aes(x = days_btwn_50_40, fill = nchs))
+```
+

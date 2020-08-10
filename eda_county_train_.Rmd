@@ -19,7 +19,7 @@ county_train_decrease <- read_feather('./county_train_decrease.feather')
 
 ```{r}
 stayhome_set <- county_train_stayhome %>% 
-  distinct(fips, nchs, pop, threshold_day, 
+  distinct(fips, county, state, nchs, pop, threshold_day, 
            gt50, gt500, schools, restaurants, entertainment, stayhome,
            days_btwn_stayhome_thresh, days_btwn_decrease_thresh,
            decrease_50_total_visiting, 
@@ -27,7 +27,7 @@ stayhome_set <- county_train_stayhome %>%
            roll_decrease_on_stayhome, 
            min_decrease)
 decrease_set <- county_train_decrease %>% 
-  distinct(fips, nchs, pop, threshold_day, 
+  distinct(fips, county, state, nchs, pop, threshold_day, 
            gt50, gt500, schools, restaurants, entertainment, stayhome, 
            days_btwn_stayhome_thresh, days_btwn_decrease_thresh,
            decrease_50_total_visiting, 
@@ -205,6 +205,33 @@ county_set %>%
 tapply(county_set$days_btwn_stayhome_thresh, county_set$nchs, median, na.rm = TRUE)
 tapply(county_set$days_btwn_decrease_thresh, county_set$nchs, median, na.rm = TRUE)
 tapply(county_set$days_btwn_decrease_stayhome, county_set$nchs, median, na.rm = TRUE)
+```
+
+```{r}
+county_set %>% 
+  filter(days_btwn_decrease_stayhome <=  1,
+         days_btwn_decrease_stayhome >= -1 
+         ) %>% 
+  select(county, state, nchs, days_btwn_decrease_stayhome) %>% 
+  arrange(nchs)
+```
+
+```{r}
+county_set %>% 
+  filter(state == "New York"
+         ) %>% 
+  select(county, state, nchs, days_btwn_decrease_stayhome, stayhome, decrease_50_total_visiting) %>% 
+  arrange(nchs)
+```
+
+
+```{r}
+county_set %>% 
+  filter(days_btwn_decrease_stayhome < 0) %>% 
+  select(county, state, nchs, 
+         days_btwn_decrease_stayhome, 
+         stayhome, decrease_50_total_visiting) %>%
+  arrange( nchs)
 ```
 
 ```{r}
