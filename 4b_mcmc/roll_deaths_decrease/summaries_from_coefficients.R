@@ -123,17 +123,23 @@ curves_by_fips = function(
       sprintf("b[(Intercept) fips:%s]", f),
       sprintf("b[poly(days_since_thresh, 2)%s fips:%s]", 1:2, f)
     )
-    
+
     resid = samples[ ,nms] %*% t(poly_t) 
+    lp = covar_effect + interv_effect + resid
+    peak_pos = apply(lp, 1, which.max) - 1
+    peak_val = 1e6 * exp(apply(lp, 1, max))
     
     out = list(
       data = f_data,
       intervention_curve = interv_effect,
       random_effect_curve = resid,
       covar_curve = covar_effect,
-      linear_predictor = covar_effect + interv_effect + resid,
-      disp = samples[ ,"reciprocal_dispersion"]
+      linear_predictor = lp,
+      disp = samples[ ,"reciprocal_dispersion"],
+      peak_pos = peak_pos,
+      peak_val = peak_val
     )
+
     out$predicted_mean = f_pop * exp(out$linear_predictor)
     results[[f]] = out
     progress_bar$tick()
@@ -193,6 +199,19 @@ nchs_effect_summaries = function(extracted_curves) {
     progress_bar$tick()
   }
   
+  # Strategy 2: Aggregate lp curves per sample
+  agg_lp = array(0, c(1000, max_t + 1, 6))
+  nchs_count = table(nchs)
+  for (i in seq_along(nchs)) {
+    k = as.integer(nchs[i])
+    n = nchs_count[k]
+    lp = extracted_curves[[i]]$linear_predictor
+    agg_lp[ , , k] = agg_lp[ , , k] + lp / n
+  }
+  
+  summaries$agg_lp = agg_lp
+  
+  
   return (summaries)
 }
 
@@ -210,7 +229,8 @@ main = function() {
     curve_summaries = curves_by_fips(model, df)
     cat("summarizing by nchs...\n")
     nchs_summaries = nchs_effect_summaries(curve_summaries)
-    
+    nchs_summaries_actual = nchs_summaries
+
     # Answer time to peak and peak value and plot
     # Note: [ ,-1] to remove nchs
     N = table(distinct(select(df, fips, nchs))$nchs)
@@ -242,7 +262,7 @@ main = function() {
       filter(t <= 30)
     
     # === late intervention ===
-    up = 7
+    up = 10
     
     # Summary for intervention as observed
     cat("computing curve summaries by fips late intervention...\n")
@@ -253,7 +273,8 @@ main = function() {
     )
     cat("summarizing by nchs...\n")
     nchs_summaries = nchs_effect_summaries(curve_summaries)
-    
+    nchs_summaries_late = nchs_summaries
+
     # Answer time to peak and peak value and plot
     # Note: [ ,-1] to remove nchs
     N = table(distinct(select(df, fips, nchs))$nchs)
@@ -286,7 +307,7 @@ main = function() {
       filter(t <= 30)
     
     # === early intervention ===
-    down = -14
+    down = -10
     
     # Summary for intervention as observed
     cat("computing curve summaries by fips early intervention...\n")
@@ -297,7 +318,8 @@ main = function() {
     )
     cat("summarizing by nchs...\n")
     nchs_summaries = nchs_effect_summaries(curve_summaries)
-    
+    nchs_summaries_early = nchs_summaries
+
     # Answer time to peak and peak value and plot
     # Note: [ ,-1] to remove nchs
     N = table(distinct(select(df, fips, nchs))$nchs)
@@ -339,8 +361,8 @@ main = function() {
       rename(NCHS=nchs) %>% 
       mutate(
         median=median/log(10) + 6,
-        q05=pmin(pmax(q05/log(10) + 6, -2), 1),
-        q95=pmin(pmax(q95/log(10) + 6, -2), 1)
+        q05=pmin(pmax(q05/log(10) + 6, -1), 1.5),
+        q95=pmin(pmax(q95/log(10) + 6, -1), 1.5)
       )
     
     ggplot(plotdata_all) +
@@ -351,17 +373,17 @@ main = function() {
       ) +
       facet_wrap(~ NCHS, labeller=label_both) +
       labs(fill="Timing",
-           x="Days since threhsold",
+           x="Days since threshold",
            y="Daily deaths per 1 million") +
       guides(color=FALSE, fill=FALSE) +
       scale_y_continuous(
-        limits=c(-2, 1.1),
-        breaks=c(-2, -1, 0, 1),
-        labels=c("0.01", "0.1", "0", "10")
+        limits=c(-1, 1.5),
+        breaks=c(-1, 0, 1),
+        labels=c("0.1", "1", "10")
       ) +
       theme_minimal_hgrid() +
-      scale_color_manual(values=c("blue", "green", "orange")) +
-      scale_fill_manual(values=c("blue", "green", "orange")) +
+      scale_color_manual(values=c("#0072B2", "#009E73", "#D55E00")) +
+      scale_fill_manual(values=c("#0072B2", "#009E73", "#D55E00")) +
       theme(legend.position = "top")
   
   ggsave(
@@ -370,26 +392,129 @@ main = function() {
     height=8,
     units="cm"
   )
+  # 
+  # table_peaks_pos = tibble(
+  #   NCHS=1:6,
+  #   Early=peaks_pos_early,
+  #   Actual=peaks_pos,
+  #   Late=peaks_pos_late
+  # )
+  # 
+  # cat("Table peak days since treshhold\n")
+  # print(xtable(table_peaks_pos, include.rownames=FALSE))
+  # 
+  # table_peaks_val = tibble(
+  #   NCHS=1:6,
+  #   Early=peaks_val_early,
+  #   Actual=peaks_val,
+  #   Late=peaks_val_late
+  # )
+  # 
+  # cat("Table vaue at peak\n")
+  # print(xtable(table_peaks_val, include.rownames=FALSE))
+  # 
   
-  table_peaks_pos = tibble(
-    NCHS=1:6,
-    Early=peaks_pos_early,
-    Actual=peaks_pos,
-    Late=peaks_pos_late
+  nchs_counts = df %>% 
+    distinct(nchs, fips) %>% 
+    group_by(nchs) %>% 
+    count() %>% 
+    pull(n)
+  
+  summary_list = list(
+    "early"=nchs_summaries_early,
+    "actual"=nchs_summaries_actual,
+    "late"=nchs_summaries_late
   )
+  
+  peaks = list()
+  
+  for (j in 1:3) {
+    summary_name = names(summary_list)[j]
+    summary = summary_list[[j]]
+    
+    pos_mean = pos_sd = pos_q05 = pos_q95 = pos_q50 = pos_q25 = pos_q75 = pos_iqr = numeric(6)
+    val_mean = val_sd = val_q05 = val_q95 = val_q50 = val_q25 = val_q75 = val_iqr = numeric(6)
+    
+    for (i in 1:6) {
+      D = summary$agg_lp[ , , i]
+      pos = apply(D, 1, which.max) - 1
+      val = 1e6 * exp(apply(D, 1, max))
+      pos_mean[i] = mean(pos)
+      pos_sd[i] = sd(pos)
+      pos_q05[i] = quantile(pos, 0.05)
+      pos_q95[i] = quantile(pos, 0.95)
+      pos_q50[i] = quantile(pos, 0.50)
+      pos_q25[i] = quantile(pos, 0.25)
+      pos_q75[i] = quantile(pos, 0.75)
+      pos_iqr[i] = pos_q75[i] - pos_q25[i]
+      val_mean[i] = mean(val)
+      val_sd[i] = sd(val)
+      val_q05[i] = quantile(val, 0.05)
+      val_q95[i] = quantile(val, 0.95)
+      val_q50[i] = quantile(val, 0.50)
+      val_q25[i] = quantile(val, 0.25)
+      val_q75[i] = quantile(val, 0.75)
+      val_iqr[i] = val_q75[i] - val_q25[i]
+    }
+    
+    peaks[[summary_name]] = list(
+      pos_mean=pos_mean,
+      pos_sd=pos_sd,
+      pos_q05=pos_q05,
+      pos_q95=pos_q95,
+      pos_q50=pos_q50,
+      pos_q25=pos_q25,
+      pos_q75=pos_q75,
+      pos_iqr=pos_iqr,
+      val_mean=val_mean,
+      val_sd=val_sd,
+      val_q05=val_q05,
+      val_q95=val_q95,
+      val_q50=val_q50,
+      val_q25=val_q25,
+      val_q75=val_q75,
+      val_iqr=val_iqr
+    )
+    
+  }
+  
+  table_peaks  = tibble(
+    NCHS=1:6,
+    Early_pos=sprintf(
+      "%s (%s)",
+      peaks$early$pos_q50,
+      peaks$early$pos_iqr
+    ),
+    Actual_pos=sprintf(
+      "%s (%s)",
+      peaks$actual$pos_q50,
+      peaks$actual$pos_iqr
+    ),
+    Late_pos=sprintf(
+      "%s (%s)",
+      peaks$late$pos_q50,
+      peaks$late$pos_iqr
+    ),
+    Early_val=sprintf(
+      "%.2f (%.2f)",
+      peaks$early$val_q50,
+      peaks$early$val_iqr
+    ),
+    Actual_val=sprintf(
+      "%.2f (%.2f)",
+      peaks$actual$val_q50,
+      peaks$actual$val_iqr
+    ),
+    Late_val=sprintf(
+      "%.2f (%.2f)",
+      peaks$late$val_q50,
+      peaks$late$val_iqr
+    )
+  )
+  
   
   cat("Table peak days since treshhold\n")
-  print(xtable(table_peaks_pos, include.rownames=FALSE))
-  
-  table_peaks_val = tibble(
-    NCHS=1:6,
-    Early=peaks_val_early,
-    Actual=peaks_val,
-    Late=peaks_val_late
-  )
-  
-  cat("Table vaue at peak\n")
-  print(xtable(table_peaks_val, include.rownames=FALSE))
+  print(xtable(table_peaks[ ,-1], include.rownames=FALSE))
   
 }
 
