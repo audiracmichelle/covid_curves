@@ -289,9 +289,9 @@ plot_usmap(data = county_deaths_desc, include = county_deaths_desc$fips,
 
 ```{r}
 county_cases_desc %>%
-  select(decrease_40_school_visits,
-         decrease_40_recreation_visiting,
-         decrease_40_total_visiting) %>% lapply(summary)
+  select(decrease_50_school_visits,
+         decrease_50_recreation_visiting,
+         decrease_50_total_visiting) %>% lapply(summary)
 ```
 
 ```{r}
@@ -470,6 +470,13 @@ county_cases_desc %>%
   geom_density(aes(x = ethnic_per_cap, fill = nchs), alpha = 0.5)
 ```
 
+## county_train
+
+```{r}
+county_train_cases <- read_feather("./county_train_cases.feather")
+county_train <- read_feather("./county_train.feather")
+```
+
 ```{r}
 cum_deaths_ <- county_train %>% 
   group_by(fips) %>% 
@@ -477,13 +484,6 @@ cum_deaths_ <- county_train %>%
   ungroup() %>% pull(cum_deaths)
 
 quantile(cum_deaths_, 0.5)
-```
-
-## county_train
-
-```{r}
-county_train_cases <- read_feather("./county_train_cases.feather")
-county_train <- read_feather("./county_train.feather")
 ```
 
 ```{r}

@@ -2,10 +2,12 @@ library(xts)
 
 ## Read data
 source("./county_features.R")
-county_train <- county_features %>% left_join(county_deaths_desc)
+county_deaths_desc_ <- read_feather("./county_deaths_desc_.feather")
+county_train <- county_features %>% left_join(county_deaths_desc_)
 rm(list = c("county_features",
             "county_cases_desc",
-            "county_deaths_desc"))
+            "county_deaths_desc", 
+            "county_deaths_desc_"))
 
 # use the threshold_day to get the time counter 
 county_train %<>%

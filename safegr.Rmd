@@ -6,6 +6,14 @@ library(feather)
 library(lubridate)
 library(plotly)
 library(zoo)
+library(gridExtra)
+library(cowplot)
+```
+
+```{r}
+#this codes cleans the workspace so it has to be run first
+source('./county_features.R')
+rm(list = c("county_cases_desc", "county_features"))
 ```
 
 ```{r}
@@ -176,14 +184,7 @@ safegr %<>%
   mutate(min_relative = min(roll_relative_week, na.rm = TRUE)) %>% 
   ungroup()
 
-xx <- safegr %>%distinct(fips, key, min_relative)
-summary(xx$min_relative)
-```
-
-```{r}
-xx <- safegr %>% 
-  distinct(fips, key, min_relative) 
-
+xx <- safegr %>% distinct(fips, key, min_relative)
 tapply(xx$min_relative, xx$key, summary)
 ```
 
@@ -236,36 +237,319 @@ tapply(xx$decrease_50, xx$key, summary)
 ```{r}
 #safegr %>% select(fips, key, date, relative_week, contains("decrease")) %>% head(5000) %>% view()
 
-safegr$decrease_70 <- safegr$date
+safegr$decrease_60 <- safegr$date
 
-safegr$decrease_70[safegr$roll_relative_week > 0.3] <- as.Date("2020-12-31")
+safegr$decrease_60[safegr$roll_relative_week > 0.4] <- as.Date("2020-12-31")
 
 safegr %<>% 
   group_by(fips, key) %>% 
-  mutate(decrease_70 = min(decrease_70)) %>% 
+  mutate(decrease_60 = min(decrease_60)) %>% 
   ungroup()
 
-safegr$decrease_70[safegr$decrease_70 == as.Date("2020-12-31")] <- NA
+safegr$decrease_60[safegr$decrease_60 == as.Date("2020-12-31")] <- NA
 
 safegr %>% 
-  distinct(fips, key, decrease_70) %>% 
-  pull(decrease_70) %>% summary
+  distinct(fips, key, decrease_60) %>% 
+  pull(decrease_60) %>% summary
 ```
 
 ```{r}
 xx <- safegr %>% 
-  distinct(fips, key, decrease_70) 
+  distinct(fips, key, decrease_60) 
 
-tapply(xx$decrease_70, xx$key, summary)
+tapply(xx$decrease_60, xx$key, summary)
+```
+
+```{r}
+county_deaths_desc_ <- county_deaths_desc %>% 
+  left_join(safegr %>% 
+              rename(stayhome = date) %>%
+              filter(key == "total_visiting") %>% 
+              select(fips, stayhome, relative_week, roll_relative_week, min_relative)) %>% 
+  rename(decrease_on_stayhome = relative_week, 
+         roll_decrease_on_stayhome = roll_relative_week,
+         min_decrease = min_relative)
+
+write_feather(county_deaths_desc_, "county_deaths_desc_.feather")
+```
+
+```{r}
+county_deaths_desc_ %>% 
+  filter(fips == "48453") %>% 
+  select(stayhome, roll_decrease_on_stayhome, decrease_on_stayhome)
+```
+
+```{r}
+safegr %>%
+  distinct(fips, key,
+           baseline, min_relative,
+           decrease_40, decrease_50, decrease_60) %>% 
+  write_feather("safegr.feather")
 ```
 
 ```{r}
 safegr %<>% 
-  distinct(fips, key, 
-           baseline, min_relative, 
-           decrease_40, decrease_50, decrease_70)
+  left_join(select(county_deaths_desc, fips, stayhome))
 ```
 
 ```{r}
-write_feather(safegr, "safegr.feather")
+# After stayhome
+safegr_ <- safegr %>% 
+  filter(key == "total_visiting", 
+         date >= stayhome)
+
+summary(safegr_$stayhome)
+summary(safegr_$date)
+
+# safegr_ %<>% 
+#   group_by(fips) %>% 
+#   arrange(date) %>% 
+#   mutate(index = row_number(), 
+#          index_desc = sort(index, decreasing = TRUE)) %>% 
+#   ungroup()
 ```
+
+```{r}
+safegr_ %>% 
+  group_by(fips) %>% 
+  summarise(on_stayhome = relative_week[1], 
+            min_relative = min(relative_week)) %>% 
+  ungroup() %>% 
+  mutate(diff = on_stayhome - min_relative) %>% 
+  ggplot() +
+  geom_histogram(aes(x = diff))
+```
+
+```{r}
+safegr_ %>% 
+  group_by(fips) %>% 
+  summarise(on_stayhome = relative_week[1], 
+            max_relative = max(relative_week)) %>% 
+  ungroup() %>% 
+  mutate(diff = max_relative - on_stayhome) %>% 
+  ggplot() +
+  geom_histogram(aes(x = diff))
+
+safegr_ %>% 
+  group_by(fips) %>% 
+  mutate(on_stayhome = relative_week[1]) %>% 
+  ungroup() %>% 
+  filter(date == as.Date("2020-05-01")) %>% 
+  mutate(diff = relative_week - on_stayhome) %>% 
+  ggplot() +
+  geom_histogram(aes(x = diff))
+
+safegr_ %>% 
+  group_by(fips) %>% 
+  mutate(min_relative = min(relative_week)) %>% 
+  ungroup() %>% 
+  filter(date == as.Date("2020-05-01")) %>% 
+  mutate(diff = relative_week - min_relative) %>% 
+  ggplot() +
+  geom_histogram(aes(x = diff))
+```
+
+```{r}
+county_train_stayhome <- read_feather('./county_train_stayhome.feather')
+county_train_decrease <- read_feather('./county_train_decrease.feather')
+```
+
+```{r}
+max(county_train_stayhome$date)
+max(county_train_decrease$date)
+```
+
+```{r}
+xx <- county_train_stayhome %>%
+  distinct(fips, nchs, 
+           stayhome, decrease_on_stayhome)
+yy <- county_train_decrease %>%
+  distinct(fips, nchs, 
+           stayhome, decrease_on_stayhome)
+length(unique(c(xx$fips, yy$fips)))
+zz <- full_join(xx, yy)
+table(zz$nchs)
+```
+
+```{r}
+zz %>% 
+   mutate(decrease_on_stayhome_ = 1 - decrease_on_stayhome) %>%
+  group_by(nchs) %>% 
+  summarise(mu = mean(decrease_on_stayhome_, na.rm = TRUE))
+```
+
+```{r}
+plot_a <- zz %>% 
+   mutate(decrease_on_stayhome_ = 1 - decrease_on_stayhome) %>% 
+  ggplot() + 
+  geom_density(aes(x = decrease_on_stayhome_, 
+                   col = nchs, 
+                   fill = nchs, 
+                   alpha = if_else(nchs %in% c(1,6), 1, 0)), 
+               size = 1) + 
+  scale_alpha_continuous(range = c(0,0.25)) +
+  guides(alpha = FALSE) + 
+  labs(x = "Relative mobility decrease on stayhome") + 
+  theme_minimal_grid() +
+  theme(axis.text.y = element_blank(), 
+        legend.position = "bottom")
+#ggsave("./decrease.pdf", height = 3, width = 4.5)
+plot_a
+```
+
+```{r}
+safegr_diff <- safegr_ %>% 
+  group_by(fips) %>% 
+  summarise(on_stayhome = relative_week[1], 
+            min_relative = min(relative_week)) %>% 
+  ungroup() %>% 
+  mutate(diff = on_stayhome - min_relative)
+
+quantile(safegr_diff$diff, c(.75, .80, .9), na.rm = TRUE)
+
+plot_b <- zz %>% 
+  left_join(safegr_diff) %>% 
+  mutate(q = ifelse(diff <= 0.052, "1", NA)) %>%
+  ggplot() + 
+  geom_histogram(aes(x = diff, 
+                     fill = q), 
+                     col = "white", size = 0.7, alpha = 0.6) + 
+  #geom_vline(xintercept = 0.12, lty = 2) +
+  guides(fill = FALSE, col = FALSE) + 
+  labs(x = "Decrease after stayhome to min level") + 
+  theme_minimal_grid() +
+  annotate("text", x=0.025, y=20, label= "80%", size = 7)
+plot_b
+```
+
+```{r}
+safegr_diff <- safegr_ %>% 
+  filter(date <= as.Date("2020-05-01")) %>% 
+  group_by(fips) %>% 
+  mutate(min_relative = min(relative_week)) %>%
+  ungroup() %>% 
+  filter(date == as.Date("2020-05-01")) %>% 
+  mutate(diff = relative_week - min_relative)
+
+quantile(safegr_diff$diff, c(.75, .80, .9), na.rm = TRUE)
+
+plot_c <- zz %>% 
+  left_join(safegr_diff) %>% 
+  mutate(q = ifelse(diff <= 0.197, "1", NA)) %>%
+  ggplot() + 
+  geom_histogram(aes(x = diff, 
+                     fill = q), 
+                     col = "white", size = 0.7, alpha = 0.6) + 
+  #geom_vline(xintercept = 0.12, lty = 2) +
+  guides(fill = FALSE, col = FALSE) + 
+  labs(x = "Increase from min level to May 1st") + 
+  theme_minimal_grid() +
+  annotate("text", x=0.15, y=10, label= "80%", size = 7)
+plot_c
+```
+
+```{r}
+#pcol1 <- plot_grid(p1 + theme(legend.position="none"), 
+#                   leg1,  ncol = 2, rel_widths = c(2,1))
+pcol1 <- plot_grid(plot_a, scale = 0.9)
+pcol2 <- plot_grid(plot_b, plot_c, nrow = 2, scale = 0.9)
+plot_grid(pcol1, pcol2, ncol = 2, rel_widths = c(1.2, 1))
+ggsave("decrease.pdf", width = 9, height = 4)
+```
+
+
+<!-- ```{r} -->
+<!-- zz %>%  -->
+<!--   rename(date = stayhome) %>%  -->
+<!--   left_join(safegr %>%  -->
+<!--               filter(key == "total_visiting") %>%  -->
+<!--               select(fips, date, min_relative)) %>%  -->
+<!--   ggplot() + -->
+<!--   geom_density(aes(x = min_relative, col = nchs)) -->
+
+<!-- zz %>%  -->
+<!--   rename(date = stayhome) %>%  -->
+<!--   left_join(safegr %>%  -->
+<!--               filter(key == "total_visiting") %>%  -->
+<!--               select(fips, date, baseline)) %>%  -->
+<!--   mutate(basel_percap = baseline / pop) %>% -->
+<!--   ggplot() + -->
+<!--   geom_density(aes(x = basel_percap, col = nchs)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- # After decrease, rebound statistics -->
+<!-- safegr_ <- safegr %>%  -->
+<!--   filter(key == "total_visiting",  -->
+<!--          date >= decrease_50) -->
+
+<!-- summary(safegr_$decrease_50) -->
+<!-- summary(safegr_$date) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- safegr_ %>%  -->
+<!--   group_by(fips) %>%  -->
+<!--   summarise(max_relative = max(roll_relative_week)) %>%  -->
+<!--   ungroup() %>%  -->
+<!--   ggplot() + -->
+<!--   geom_histogram(aes(x = max_relative)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- safegr_ %>%  -->
+<!--   group_by(fips) %>%  -->
+<!--   summarise(max_relative = max(roll_relative_week)) %>%  -->
+<!--   ungroup() %>%  -->
+<!--   mutate(diff= max_relative - 0.5) %>%  -->
+<!--   ggplot() + -->
+<!--   geom_histogram(aes(x = diff)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- safegr_$rebound_40 <- safegr_$date -->
+<!-- safegr_$rebound_40[safegr_$roll_relative_week > 0.6] <- as.Date("2019-12-31") -->
+
+<!-- safegr_ %<>%  -->
+<!--   group_by(fips) %>%  -->
+<!--   mutate(rebound_40 = max(rebound_40)) %>%  -->
+<!--   ungroup() %>%  -->
+<!--   mutate(days_btwn_50_40 = as.numeric(rebound_40 - decrease_50)) -->
+<!-- safegr_ %>%  -->
+<!--   distinct(fips, rebound_40) %>%  -->
+<!--   pull(rebound_40) %>% summary -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- ggplotly(safegr_ %>%  -->
+<!--   filter(fips == 13299) %>%  -->
+<!--   ggplot() + -->
+<!--   geom_line(aes(x = date, roll_relative_week)))  -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- zz %>%  -->
+<!--   left_join(distinct(safegr_, fips, rebound_40)) %>% -->
+<!--   ggplot() + -->
+<!--   geom_histogram(aes(x = rebound_40, fill = nchs)) -->
+
+<!-- zz %>%  -->
+<!--   left_join(distinct(safegr_, fips, days_btwn_50_40)) %>% -->
+<!--   ggplot() + -->
+<!--   geom_histogram(aes(x = days_btwn_50_40, fill = nchs)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- safegr_ %>%  -->
+<!--   group_by(fips) %>%  -->
+<!--   summarise(max_date= max(date)) %>%  -->
+<!--   pull(max_date) %>% summary() -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- sum(is.na(safegr_$decrease_50)) -->
+
+<!-- zz %>% left_join(filter(safegr_, date == as.Date("2020-05-13"))) %>%  -->
+<!--   ggplot() + -->
+<!--   geom_density(aes(x = roll_relative_week, col = nchs)) -->
+<!-- ``` -->
