@@ -1,0 +1,54 @@
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(rstanarm)
+options(mc.cores=4)
+
+## Read county_train
+county_train <- read_feather("../../county_train_decrease.feather") %>%
+  select(days_since_thresh, y, nchs, college, age_65_plus, black,
+         hispanic, fips, days_since_intrv_decrease, days_since_intrv_stayhome,
+         intrv_decrease, intrv_stayhome, days_btwn_decrease_thresh,
+         days_btwn_stayhome_thresh, pop) %>%
+  na.omit()
+#length(unique(county_train$fips))
+
+## Train model
+model = stan_glmer.nb(
+  y ~
+    poly(days_since_thresh, 2) * (nchs + college + age_65_plus + black + hispanic) + 
+    (poly(days_since_thresh, 2) | fips) +
+    # first stick: mobility
+    days_since_intrv_decrease:intrv_decrease + 
+    I(days_since_intrv_decrease^2):intrv_decrease + 
+    days_since_intrv_decrease:intrv_decrease:days_btwn_decrease_thresh +
+    I(days_since_intrv_decrease^2):intrv_decrease:days_btwn_decrease_thresh + 
+    days_since_intrv_decrease:intrv_decrease:nchs +
+    I(days_since_intrv_decrease^2):intrv_decrease:nchs +
+    # second stick: stayhome
+    days_since_intrv_stayhome:intrv_stayhome + 
+    I(days_since_intrv_stayhome^2):intrv_stayhome + 
+    days_since_intrv_stayhome:intrv_stayhome:days_btwn_stayhome_thresh +
+    I(days_since_intrv_stayhome^2):intrv_stayhome:days_btwn_stayhome_thresh + 
+    days_since_intrv_stayhome:intrv_stayhome:(nchs) +
+    I(days_since_intrv_stayhome^2):intrv_stayhome:(nchs)
+  ,
+  offset = log(pop),
+  data=county_train,
+  # algorithm="meanfield",
+  iter = 2500,
+  warm = 2250,
+  chains = 4,
+  # adapt_iter = 2500,
+  QR=TRUE
+)
+
+saveRDS(model, paste("./model.rds", sep = ""))
+
+#### #### 
+## county_fit
+
+county_fit <- model %>%
+  posterior_predict(county_train, draws = 500)
+
+saveRDS(county_fit, "./county_fit.rds")

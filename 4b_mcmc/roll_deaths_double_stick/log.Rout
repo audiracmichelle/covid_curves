@@ -1,0 +1,100 @@
+
+SAMPLING FOR MODEL 'count' NOW (CHAIN 1).
+
+SAMPLING FOR MODEL 'count' NOW (CHAIN 2).
+
+SAMPLING FOR MODEL 'count' NOW (CHAIN 3).
+
+SAMPLING FOR MODEL 'count' NOW (CHAIN 4).
+Chain 1: 
+Chain 1: Gradient evaluation took 0.013982 seconds
+Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 139.82 seconds.
+Chain 1: Adjust your expectations accordingly!
+Chain 1: 
+Chain 1: 
+Chain 2: 
+Chain 2: Gradient evaluation took 0.01612 seconds
+Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 161.2 seconds.
+Chain 2: Adjust your expectations accordingly!
+Chain 2: 
+Chain 2: 
+Chain 3: 
+Chain 3: Gradient evaluation took 0.012585 seconds
+Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 125.85 seconds.
+Chain 3: Adjust your expectations accordingly!
+Chain 3: 
+Chain 3: 
+Chain 4: 
+Chain 4: Gradient evaluation took 0.013459 seconds
+Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 134.59 seconds.
+Chain 4: Adjust your expectations accordingly!
+Chain 4: 
+Chain 4: 
+Chain 1: Iteration:    1 / 2500 [  0%]  (Warmup)
+Chain 3: Iteration:    1 / 2500 [  0%]  (Warmup)
+Chain 4: Iteration:    1 / 2500 [  0%]  (Warmup)
+Chain 2: Iteration:    1 / 2500 [  0%]  (Warmup)
+Chain 3: Iteration:  250 / 2500 [ 10%]  (Warmup)
+Chain 4: Iteration:  250 / 2500 [ 10%]  (Warmup)
+Chain 2: Iteration:  250 / 2500 [ 10%]  (Warmup)
+Chain 1: Iteration:  250 / 2500 [ 10%]  (Warmup)
+Chain 3: Iteration:  500 / 2500 [ 20%]  (Warmup)
+Chain 4: Iteration:  500 / 2500 [ 20%]  (Warmup)
+Chain 1: Iteration:  500 / 2500 [ 20%]  (Warmup)
+Chain 2: Iteration:  500 / 2500 [ 20%]  (Warmup)
+Chain 3: Iteration:  750 / 2500 [ 30%]  (Warmup)
+Chain 4: Iteration:  750 / 2500 [ 30%]  (Warmup)
+Chain 1: Iteration:  750 / 2500 [ 30%]  (Warmup)
+Chain 2: Iteration:  750 / 2500 [ 30%]  (Warmup)
+Chain 3: Iteration: 1000 / 2500 [ 40%]  (Warmup)
+Chain 1: Iteration: 1000 / 2500 [ 40%]  (Warmup)
+Chain 4: Iteration: 1000 / 2500 [ 40%]  (Warmup)
+Chain 2: Iteration: 1000 / 2500 [ 40%]  (Warmup)
+Chain 3: Iteration: 1250 / 2500 [ 50%]  (Warmup)
+Chain 1: Iteration: 1250 / 2500 [ 50%]  (Warmup)
+Chain 4: Iteration: 1250 / 2500 [ 50%]  (Warmup)
+Chain 2: Iteration: 1250 / 2500 [ 50%]  (Warmup)
+Chain 3: Iteration: 1500 / 2500 [ 60%]  (Warmup)
+Chain 4: Iteration: 1500 / 2500 [ 60%]  (Warmup)
+Chain 1: Iteration: 1500 / 2500 [ 60%]  (Warmup)
+Chain 2: Iteration: 1500 / 2500 [ 60%]  (Warmup)
+Chain 4: Iteration: 1750 / 2500 [ 70%]  (Warmup)
+Chain 3: Iteration: 1750 / 2500 [ 70%]  (Warmup)
+Chain 1: Iteration: 1750 / 2500 [ 70%]  (Warmup)
+Chain 2: Iteration: 1750 / 2500 [ 70%]  (Warmup)
+Chain 4: Iteration: 2000 / 2500 [ 80%]  (Warmup)
+Chain 3: Iteration: 2000 / 2500 [ 80%]  (Warmup)
+Chain 2: Iteration: 2000 / 2500 [ 80%]  (Warmup)
+Chain 1: Iteration: 2000 / 2500 [ 80%]  (Warmup)
+Chain 3: Iteration: 2250 / 2500 [ 90%]  (Warmup)
+Chain 3: Iteration: 2251 / 2500 [ 90%]  (Sampling)
+Chain 2: Iteration: 2250 / 2500 [ 90%]  (Warmup)
+Chain 2: Iteration: 2251 / 2500 [ 90%]  (Sampling)
+Chain 4: Iteration: 2250 / 2500 [ 90%]  (Warmup)
+Chain 4: Iteration: 2251 / 2500 [ 90%]  (Sampling)
+Chain 1: Iteration: 2250 / 2500 [ 90%]  (Warmup)
+Chain 1: Iteration: 2251 / 2500 [ 90%]  (Sampling)
+Chain 3: Iteration: 2500 / 2500 [100%]  (Sampling)
+Chain 3: 
+Chain 3:  Elapsed Time: 27569.9 seconds (Warm-up)
+Chain 3:                1855.69 seconds (Sampling)
+Chain 3:                29425.6 seconds (Total)
+Chain 3: 
+Chain 2: Iteration: 2500 / 2500 [100%]  (Sampling)
+Chain 2: 
+Chain 2:  Elapsed Time: 27627.8 seconds (Warm-up)
+Chain 2:                1839.99 seconds (Sampling)
+Chain 2:                29467.8 seconds (Total)
+Chain 2: 
+Chain 4: Iteration: 2500 / 2500 [100%]  (Sampling)
+Chain 4: 
+Chain 4:  Elapsed Time: 28004.6 seconds (Warm-up)
+Chain 4:                1799.1 seconds (Sampling)
+Chain 4:                29803.7 seconds (Total)
+Chain 4: 
+Chain 1: Iteration: 2500 / 2500 [100%]  (Sampling)
+Chain 1: 
+Chain 1:  Elapsed Time: 28896.9 seconds (Warm-up)
+Chain 1:                3062.08 seconds (Sampling)
+Chain 1:                31958.9 seconds (Total)
+Chain 1: 
