@@ -733,7 +733,7 @@ write_csv(cm_tbl2, "cumstats_rolldeaths.csv")
 
 
 
-write_csv(cm_tbl2, "cumstats_rolldeaths_decrease.csv")
+write_csv(cm_tbl2, "cumstats_rolldeaths.csv")
 
 
 cm_tbl3 = tibble(NCHS=1:6, pop=nchs_pop)
@@ -747,6 +747,6 @@ for (stat_field in c("cd10_lma", "cd20_lma", "cd30_lma", "cdmay1_lma", "cd10_ame
 }
 cm_tbl3
 
-write_csv(cm_tbl3, "cumstats_rolldeaths_decrease_diffs.csv")
+write_csv(cm_tbl3, "cumstats_rolldeaths_diffs.csv")
 
 
