@@ -46,9 +46,9 @@ county_pred1$days_since_intrv_stayhome <- county_pred1$days_since_intrv_stayhome
 county_pred3$days_since_intrv_stayhome <- county_pred3$days_since_intrv_stayhome - down
 
 ## get posteriors
-# county_ctr1 <- model %>% 
+# county_ctr1 <- model %>%
 #   posterior_predict(county_pred1, draws = 500)
-# county_ctr3 <- model %>% 
+# county_ctr3 <- model %>%
 #   posterior_predict(county_pred3, draws = 500)
 
 # saveRDS(county_ctr1, "./county_ctr1.rds")

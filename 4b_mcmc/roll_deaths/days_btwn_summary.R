@@ -45,6 +45,15 @@ county_ctr3 <- model %>%
 saveRDS(county_ctr1, "./county_ctr1.rds")
 saveRDS(county_ctr3, "./county_ctr3.rds")
 
+## get posteriors
+county_ctr1_lp <- model %>% 
+  posterior_linpred(newdata=county_pred1, draws = 500)
+county_ctr3_lp <- model %>% 
+  posterior_linpred(newdata=county_pred3, draws = 500)
+
+saveRDS(county_ctr1_lp, "./county_ctr1_lp.rds")
+saveRDS(county_ctr3_lp, "./county_ctr3_lp.rds")
+
 ## generate nchs summaries
 county_pred %<>% 
   mutate(

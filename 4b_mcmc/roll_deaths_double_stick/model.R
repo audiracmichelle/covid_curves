@@ -45,10 +45,15 @@ model = stan_glmer.nb(
 
 saveRDS(model, paste("./model.rds", sep = ""))
 
+model = readRDS(paste("./model.rds", sep = ""))
+
 #### #### 
 ## county_fit
 
 county_fit <- model %>%
   posterior_predict(county_train, draws = 500)
+county_fit_lp <- model %>%
+  posterior_linpred(newdata=county_train, draws = 500)
 
 saveRDS(county_fit, "./county_fit.rds")
+saveRDS(county_fit_lp, "./county_fit_lp.rds")
