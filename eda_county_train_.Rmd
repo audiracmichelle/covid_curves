@@ -331,9 +331,30 @@ county_set %>%
 ```
 
 ```{r}
+summary(stayhome_set$days_btwn_stayhome_thresh)
+#summary(decrease_set$days_btwn_stayhome_thresh)
+#summary(stayhome_set$days_btwn_decrease_thresh)
+summary(decrease_set$days_btwn_decrease_thresh)
+summary(county_set$days_btwn_decrease_stayhome)
+```
+
+
+```{r}
 tapply(county_set$days_btwn_stayhome_thresh, county_set$nchs, median, na.rm = TRUE)
 tapply(county_set$days_btwn_decrease_thresh, county_set$nchs, median, na.rm = TRUE)
 tapply(county_set$days_btwn_decrease_stayhome, county_set$nchs, median, na.rm = TRUE)
+```
+
+```{r}
+tapply(stayhome_set$days_btwn_stayhome_thresh, stayhome_set$nchs, quantile, 0.25)
+tapply(decrease_set$days_btwn_decrease_thresh, decrease_set$nchs, quantile, 0.25)
+tapply(county_set$days_btwn_decrease_stayhome, county_set$nchs, quantile, 0.25, na.rm = TRUE)
+```
+
+```{r}
+tapply(stayhome_set$days_btwn_stayhome_thresh, stayhome_set$nchs, quantile, 0.75)
+tapply(decrease_set$days_btwn_decrease_thresh, decrease_set$nchs, quantile, 0.75)
+tapply(county_set$days_btwn_decrease_stayhome, county_set$nchs, quantile, 0.75, na.rm = TRUE)
 ```
 
 ```{r}
@@ -356,6 +377,12 @@ plot_a <- county_set %>%
   theme(plot.margin = margin(l=-1))
 plot_a
 
+```
+
+```{r}
+county_set %>% 
+  group_by(nchs) %>% 
+  summarise(mean(threshold_day))
 ```
 
 

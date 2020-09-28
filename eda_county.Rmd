@@ -180,6 +180,27 @@ source("./county_features.R")
 ```
 
 ```{r}
+fips <- county_deaths_desc$fips
+
+remove_fips_thresh <- county_deaths_desc %>% 
+  filter(is.na(threshold_day)) %>% 
+  pull(fips)
+length(remove_fips_thresh)
+sum(!fips %in% c(remove_fips_thresh))
+
+length(unique(county_features$fips))
+remove_fips_cum_deaths <- county_features %>% 
+  group_by(fips) %>% 
+  summarise(cum_deaths = max(cum_deaths)) %>% 
+  filter(cum_deaths > 5) %>% 
+  pull(fips)
+length(remove_fips_cum_deaths)
+length(setdiff(remove_fips_cum_deaths, remove_fips_thresh))
+
+sum(!fips %in% c(remove_fips_thresh, remove_fips_cum_deaths))
+```
+
+```{r}
 # all counties in county_cases_desc reached the cases threshold
 county_map <- county_deaths_desc %>% 
   mutate(no_thresh = as.factor(is.na(threshold_day)))
@@ -483,6 +504,7 @@ cum_deaths_ <- county_train %>%
   summarise(cum_deaths = max(cum_deaths)) %>% 
   ungroup() %>% pull(cum_deaths)
 
+summary(cum_deaths_)
 quantile(cum_deaths_, 0.5)
 ```
 
