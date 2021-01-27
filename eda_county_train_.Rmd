@@ -313,6 +313,113 @@ summary(county_set$days_btwn_decrease_stayhome)
 ```
 
 ```{r}
+p1 <- county_set %>% 
+  ggplot() + 
+  geom_boxplot(aes(x = nchs, y = days_btwn_stayhome_thresh, fill = nchs)) + 
+  guides(fill = FALSE) + 
+  labs(y = "Stayhome-at-home")
+
+p2 <- county_set %>% 
+  ggplot() + 
+  geom_boxplot(aes(x = nchs, y = days_btwn_decrease_thresh, fill = nchs)) + 
+  guides(fill = FALSE) + 
+  labs(y = "Mobility decrease")
+
+plot_grid(p1, p2, nrow = 2)
+ggsave("./days_btwn_thresh.png", width = 6, height = 6)
+```
+
+```{r}
+nchs_labels = c("Large central metro", 
+                "Large fringe metro", 
+                "Medium metro", 
+                "Small metro", 
+                "Micropolitan", 
+                "None-core")
+county_set %>% 
+  group_by(threshold_day, nchs) %>% 
+    summarise(n = n()) %>% 
+  ungroup() %>% 
+  arrange(nchs, threshold_day) %>% 
+  group_by(nchs) %>% 
+    mutate(sum_n = sum(n), 
+           cum_n = cumsum(n), 
+           rel_n = cum_n / sum_n
+           ) %>% 
+  ungroup() %>%
+  mutate(NCHS = factor(nchs, labels = nchs_labels)) %>% 
+  ggplot() +
+    geom_line(aes(x = threshold_day, y = rel_n, col = NCHS), size = 1) + 
+  labs(y="", x="Threshold day") + 
+  theme_minimal_grid() + 
+  theme(plot.margin = margin(l=-1))
+ggsave("./threshold.pdf", width = 6, height = 3)
+```
+
+
+```{r}
+xx <- county_set %>% 
+  select(fips, nchs, days_btwn_stayhome_thresh, days_btwn_decrease_thresh) %>% 
+  pivot_longer(cols = starts_with("days_btwn"), 
+               names_to = "intrv", 
+               names_prefix = "days_btwn_", 
+               values_to = "days_btwn")
+nchs_labels = c("Large central metro", 
+                "Large fringe metro", 
+                "Medium metro", 
+                "Small metro", 
+                "Micropolitan", 
+                "None-core")
+intrv_labels = c("Mobility \n Decrease", "Stayhome \n Orders")
+xx %>% 
+  mutate(intrv = factor(intrv, labels = intrv_labels), 
+         nchs = factor(nchs, labels = nchs_labels)) %>% 
+  ggplot(aes(y = days_btwn, x = intrv, fill = nchs)) + 
+  geom_boxplot() +  
+  facet_wrap(~ nchs, ncol = 6) + 
+  guides(fill = FALSE) + 
+  labs(x = "", y = "Days since threshold") + 
+  theme_minimal_grid() 
+ggsave("./days_since_thresh.pdf", width = 12, height = 4)
+```
+
+```{r}
+nchs_labels = c("Large \ncentral \nmetro", 
+                "Large \nfringe \nmetro", 
+                "Medium \nmetro", 
+                "Small \nmetro", 
+                "Micropolitan", 
+                "None-core")
+xx <- county_set %>%  
+  mutate(days_btwn_stayhome_decrease = days_btwn_stayhome_thresh - days_btwn_decrease_thresh) 
+xx %>% 
+  mutate(nchs = factor(nchs, labels = nchs_labels)) %>% 
+  ggplot(aes(y = days_btwn_stayhome_decrease, x = nchs, fill = nchs)) + 
+  geom_boxplot() +
+  guides(fill = FALSE) + 
+  labs(x = "", y = "Days between stayhome \nand mobility decrease") + 
+  theme_minimal_grid() 
+ggsave("./days_btwn_stayhome_decrease.pdf")
+```
+
+```{r}
+p1 <- county_set %>% 
+  ggplot() + 
+  geom_histogram(aes(x = days_btwn_stayhome_thresh, 
+                     fill = nchs), 
+                 position = "dodge", bins = 15, alpha = 0.75)
+
+p2 <- county_set %>% 
+  ggplot() + 
+  geom_histogram(aes(x = days_btwn_decrease_thresh, 
+                     fill = nchs), 
+                 position = "dodge", bins = 15, alpha = 0.75) 
+
+plot_grid(p1, p2, nrow = 2)
+```
+
+
+```{r}
 county_set %>% 
   ggplot() + 
   geom_density(aes(x = days_btwn_stayhome_thresh, col = nchs))
@@ -475,7 +582,7 @@ county_set %>%
            rel_n = cum_n / sum_n
            ) %>% 
   ungroup() %>% 
-  filter(days_btwn_decrease_thresh %in% 0)
+  filter(nchs == 6)
 ```
 
 
