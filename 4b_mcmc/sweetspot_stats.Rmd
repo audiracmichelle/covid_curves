@@ -1,0 +1,250 @@
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(gridExtra)
+library(cowplot)
+```
+
+### ------ stayhome
+
+```{r}
+county_stayhome <- read_feather("../county_future_stayhome.feather")
+#dim(county_stayhome)
+#summary(county_stayhome$date[county_stayhome$index_desc == 1])
+
+county_stayhome %<>%
+  filter(date <= as.Date("2020-05-05"))
+#dim(county_stayhome)
+
+county_stayhome %<>% 
+  mutate(row = row_number()) %>% 
+  group_by(fips) %>% 
+  arrange(date) %>% 
+  mutate(y_eff = cumsum(y), 
+         index = row_number(), 
+         index_desc = sort(index, decreasing = TRUE)) %>%
+  ungroup() %>% 
+  arrange(row)
+```
+
+```{r}
+length(unique(county_stayhome$fips))
+
+county_stayhome %>% 
+  filter(date == as.Date("2020-04-20")#, 
+         #fips %in% fips_
+         ) %>% 
+  group_by(nchs) %>% 
+  summarise(y_eff = sum(y_eff)) %>% 
+  write.csv(row.names = FALSE)
+```
+
+```{r}
+county_stayhome %>% 
+  filter(date == as.Date("2020-04-20")#, 
+         #fips %in% fips_
+         ) %>% 
+  group_by(nchs) %>% 
+  summarise(pop = sum(pop)) %>% 
+  write.csv(row.names = FALSE)
+```
+
+```{r}
+county_fit <- list()
+county_fit[['0']] <- readRDS("./roll_deaths/county_future_fit.rds")
+county_fit[['2']] <- readRDS("./roll_deaths/sweetspot/county_late_2.rds")
+county_fit[['-2']] <- readRDS("./roll_deaths/sweetspot/county_early_2.rds")
+county_fit[['4']] <- readRDS("./roll_deaths/sweetspot/county_late_4.rds")
+county_fit[['-4']] <- readRDS("./roll_deaths/sweetspot/county_early_4.rds")
+county_fit[['6']] <- readRDS("./roll_deaths/sweetspot/county_late_6.rds")
+county_fit[['-6']] <- readRDS("./roll_deaths/sweetspot/county_early_6.rds")
+county_fit[['8']] <- readRDS("./roll_deaths/sweetspot/county_late_8.rds")
+county_fit[['-8']] <- readRDS("./roll_deaths/sweetspot/county_early_8.rds")
+county_fit[['10']] <- readRDS("./roll_deaths/sweetspot/county_late_10.rds")
+county_fit[['-10']] <- readRDS("./roll_deaths/sweetspot/county_early_10.rds")
+county_fit[['12']] <- readRDS("./roll_deaths/sweetspot/county_late_12.rds")
+county_fit[['-12']] <- readRDS("./roll_deaths/sweetspot/county_early_12.rds")
+county_fit[['14']] <- readRDS("./roll_deaths/sweetspot/county_late_14.rds")
+county_fit[['-14']] <- readRDS("./roll_deaths/sweetspot/county_early_14.rds")
+```
+
+```{r}
+eff_fit_summary <- tibble()
+dates <- seq(as.Date("2020-03-11"), as.Date("2020-04-21"), by = "day")
+for (t in names(county_fit)) {
+  for (x in 1:6){
+    eff_fit <- list()
+    for (d in dates) {
+      county_idx <- which(county_stayhome$date == d & 
+                          county_stayhome$nchs == x)
+                          #, county_stayhome$fips %in% fips_)
+      if(length(county_idx) > 1) {
+        eff_fit[[as.character(d)]] <- apply(county_fit[[t]][, county_idx], 1, sum)
+      } else {
+          eff_fit[[as.character(d)]] <- 0
+      }
+    }
+    eff_fit_ <- apply(as.data.frame(eff_fit), 1, cumsum) %>% 
+      apply(1, quantile, c(0.0, 0.025, 0.5, 0.975, 1)) %>% 
+      apply(1,function(x)x) %>% 
+      as.data.frame() %>% 
+      as_tibble() %>%
+      mutate(date = dates, nchs = x, type = t)
+    eff_fit_summary <- bind_rows(eff_fit_summary, eff_fit_)
+  }
+}
+names(eff_fit_summary) <- c("min", "q025", "median", "q975", "max",
+                            "date", "nchs", "type")
+#eff_fit_summary
+```
+
+```{r}
+plots <- list()
+for(x in 1:6) {
+  plots[[x]] <- eff_fit_summary %>% 
+  filter(nchs == x) %>% 
+    ggplot() + 
+    geom_line(aes(x=date, y=median, col = type)) + 
+    geom_ribbon(aes(x=date, ymin=q025, ymax=q975, fill = type), alpha = 0.1) + 
+    labs(title = paste("nchs", x), 
+         x = "", y = "") + 
+    guides(fill = FALSE)
+}
+plots
+leg <- cowplot::get_legend(plots[[1]])
+pcol1 <- plot_grid(plots[[1]] + guides(col = FALSE), 
+                   plots[[2]] + guides(col = FALSE), 
+                   plots[[3]] + guides(col = FALSE), 
+                   plots[[4]] + guides(col = FALSE), 
+                   plots[[5]] + guides(col = FALSE), 
+                   plots[[6]] + guides(col = FALSE), 
+                   nrow = 6)
+```
+
+### ------ decrease
+
+```{r}
+county_decrease <- read_feather("../county_future_decrease.feather")
+#dim(county_decrease)
+#summary(county_decrease$date[county_decrease$index_desc == 1])
+
+county_decrease %<>%
+  filter(date <= as.Date("2020-05-05"))
+#dim(county_decrease)
+
+# fips_ <- intersect(unique(county_stayhome$fips), 
+#                    unique(county_decrease$fips))
+# length(fips_)
+
+county_decrease %<>% 
+  mutate(row = row_number()) %>% 
+  group_by(fips) %>% 
+  arrange(date) %>% 
+  mutate(y_eff = cumsum(y), 
+         index = row_number(), 
+         index_desc = sort(index, decreasing = TRUE)) %>%
+  ungroup() %>% 
+  arrange(row)
+```
+
+```{r}
+county_fit <- list()
+county_fit[['0']] <- readRDS("./roll_deaths_decrease/county_future_fit.rds")
+county_fit[['2']] <- readRDS("./roll_deaths_decrease/sweetspot/county_late_2.rds")
+county_fit[['-2']] <- readRDS("./roll_deaths_decrease/sweetspot/county_early_2.rds")
+county_fit[['4']] <- readRDS("./roll_deaths_decrease/sweetspot/county_late_4.rds")
+county_fit[['-4']] <- readRDS("./roll_deaths_decrease/sweetspot/county_early_4.rds")
+county_fit[['6']] <- readRDS("./roll_deaths_decrease/sweetspot/county_late_6.rds")
+county_fit[['-6']] <- readRDS("./roll_deaths_decrease/sweetspot/county_early_6.rds")
+county_fit[['8']] <- readRDS("./roll_deaths_decrease/sweetspot/county_late_8.rds")
+county_fit[['-8']] <- readRDS("./roll_deaths_decrease/sweetspot/county_early_8.rds")
+county_fit[['10']] <- readRDS("./roll_deaths_decrease/sweetspot/county_late_10.rds")
+county_fit[['-10']] <- readRDS("./roll_deaths_decrease/sweetspot/county_early_10.rds")
+county_fit[['12']] <- readRDS("./roll_deaths_decrease/sweetspot/county_late_12.rds")
+county_fit[['-12']] <- readRDS("./roll_deaths_decrease/sweetspot/county_early_12.rds")
+county_fit[['14']] <- readRDS("./roll_deaths_decrease/sweetspot/county_late_14.rds")
+county_fit[['-14']] <- readRDS("./roll_deaths_decrease/sweetspot/county_early_14.rds")
+```
+
+```{r}
+length(unique(county_decrease$fips))
+
+county_decrease %>% 
+  filter(date == as.Date("2020-04-20")#, 
+         #fips %in% fips_
+         ) %>% 
+  group_by(nchs) %>% 
+  summarise(y_eff = sum(y_eff)) %>% 
+  write.csv(row.names = FALSE)
+```
+
+```{r}
+county_decrease %>% 
+  filter(date == as.Date("2020-04-20")#, 
+         #fips %in% fips_
+         ) %>% 
+  group_by(nchs) %>% 
+  summarise(pop = sum(pop)) %>% 
+  write.csv(row.names = FALSE)
+```
+
+```{r}
+eff_fit_summary <- tibble()
+dates <- seq(as.Date("2020-03-11"), as.Date("2020-04-21"), by = "day")
+for (t in names(county_fit)) {
+  for (x in 1:6){
+    eff_fit <- list()
+    for (d in dates) {
+      county_idx <- which(county_decrease$date == d & 
+                          county_decrease$nchs == x)
+                          #, county_stayhome$fips %in% fips_)
+      if(length(county_idx) > 1) {
+        eff_fit[[as.character(d)]] <- apply(county_fit[[t]][, county_idx], 1, sum)
+      } else {
+          eff_fit[[as.character(d)]] <- 0
+      }
+    }
+    eff_fit_ <- apply(as.data.frame(eff_fit), 1, cumsum) %>% 
+      apply(1, quantile, c(0.0, 0.025, 0.5, 0.975, 1)) %>% 
+      apply(1,function(x)x) %>% 
+      as.data.frame() %>% 
+      as_tibble() %>%
+      mutate(date = dates, nchs = x, type = t)
+    eff_fit_summary <- bind_rows(eff_fit_summary, eff_fit_)
+  }
+}
+names(eff_fit_summary) <- c("min", "q025", "median", "q975", "max",
+                            "date", "nchs", "type")
+#eff_fit_summary
+```
+
+```{r}
+plots <- list()
+for(x in 1:6) {
+  plots[[x]] <- eff_fit_summary %>% 
+  filter(nchs == x) %>% 
+    ggplot() + 
+    geom_line(aes(x=date, y=median, col = type)) + 
+    geom_ribbon(aes(x=date, ymin=q025, ymax=q975, fill = type), alpha = 0.1) + 
+    labs(title = paste("nchs", x), 
+         x = "", y = "") + 
+    guides(fill = FALSE)
+}
+plots
+leg <- cowplot::get_legend(plots[[1]])
+pcol2 <- plot_grid(plots[[1]] + guides(col = FALSE), 
+                   plots[[2]] + guides(col = FALSE), 
+                   plots[[3]] + guides(col = FALSE), 
+                   plots[[4]] + guides(col = FALSE), 
+                   plots[[5]] + guides(col = FALSE), 
+                   plots[[6]] + guides(col = FALSE), 
+                   nrow = 6)
+```
+
+```{r}
+plot_grid(pcol1, pcol2 ,leg , ncol = 3, rel_widths = c(1, 1, 0.25))
+ggsave("./sweetspot.png", width = 10, height = 12)
+```
+
