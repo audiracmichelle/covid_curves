@@ -1,8 +1,8 @@
 # covid_timing_interventions
 
 Data extraction, preparation and model code for Audirac M., Tec M., Meyers L.A., Fox S. and
-Zigler C. ["How Timing of Stay-at-home Orders and Mobility Reductions
-Impacted First-Wave COVID-19 Deaths in US Counties"](https://www.medrxiv.org/content/10.1101/2020.11.24.20238055v1#:~:text=We%20find%20that%20population%20mobility,would%20have%20added%2016%2C149%20(95%25)
+Zigler C. "How Timing of Stay-at-home Orders and Mobility Reductions
+Impacted First-Wave COVID-19 Deaths in US Counties"
 
 ## Data extraction and preparation
 
