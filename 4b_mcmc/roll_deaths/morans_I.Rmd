@@ -1,6 +1,7 @@
 ---
-title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 
@@ -50,8 +51,8 @@ gdf = st_read("tmp/tl_2020_us_county.shp")
 ```
 
 ```{r}
-t_comparison = 14
-df_t = filter(df, days_since_intrv_stayhome == t_comparison)
+t_comparison = 7
+df_t = filter(df, days_since_thresh == t_comparison)
 res_df_t = res_df %>% 
   filter(t == t_comparison)
 ```
@@ -59,12 +60,15 @@ res_df_t = res_df %>%
 Distribution of residuals for fixed epidemic time of two weeks
 
 ```{r}
-q05 = quantile(res_df_t$res, .05)
+lines = tibble(
+  v=c(quantile(res_df_t$res, .05), mean(res_df_t$res)),
+  type=c("5%", "mean")
+)
+mn = mean(res_df_t$res)
 ggplot(res_df_t) + 
   geom_histogram(aes(x=res), bins=60) +
-  geom_vline(aes(xintercept=q05, color="5%"), lty=2) +
+  geom_vline(data=lines, aes(xintercept=v, lty=type), color="red") +
   theme_bw() +
-  scale_color_manual(values="red") +
   labs(
     title=sprintf("Residuals for epidemic time %d", t_comparison),
     color=""
@@ -116,7 +120,7 @@ ggplot() +
 Average autocorrelation
 
 
-
+[TODO]
 
 
 Moran's I
@@ -146,18 +150,19 @@ print(sprintf("excluding bottom %s", sum(!insample)))
 x = x[insample]
 fips = res_df_t$fips[insample]
 wts = 1 / distmat_raw[fips, fips]
+diag(wts) = 0
 
 
 # Manual computation of Moran's I
 c_t = mean(x)
 x_c = x - c_t
-diag(wts) = 0
 ss_tot = sum(x_c * x_c)
 covmat = wts * (x_c %*% t(x_c))
 N = length(x)
 W = sum(wts)
 moran_mat = N / W * covmat / ss_tot
 moran_I = sum(moran_mat)
+print(sprintf("Moran's I manual computation: %.3f", moran_I))
 
 # From package
 Moran.I(x, wts, scaled=TRUE)  # from package
@@ -172,8 +177,31 @@ ggplot() +
     x=""
   )
 ```
+```{r}
+local_moran_df = tibble(
+  moran=local_moran,
+  fips=fips
+)
 
-With the exclusion of bottom 5% there is no spatial correlation.
+gdf_moran_at_t = gdf %>% 
+  left_join(local_moran_df, by=c("GEOID"="fips")) %>% 
+  filter(!is.na(moran))
+
+ggplot() +
+  geom_sf(color = "#2b2b2b", fill = "white", size=0.125, data=usa) + 
+  geom_sf(data=gdf_moran_at_t, aes(fill=moran), size=0.0) +
+  # geom_sf(data=filter(gdf_res_at_t, outlier_lower_tail), fill="red") +
+  coord_sf(xlim=c(-125, -77)) +
+  scale_fill_viridis() +
+  labs(
+    title="Geographic distribution of Local Correlation"
+  ) +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank())
+```
+
+
+With the exclusion of bottom 5% there is (almost) no spatial correlation.
 
 ```{r}
 # residuals and weights
@@ -183,17 +211,18 @@ print(sprintf("excluding bottom 5%% (%d/420)", sum(!insample)))
 x = x[insample]
 fips = res_df_t$fips[insample]
 wts = 1 / distmat_raw[fips, fips]
+diag(wts) = 0
 
 # manual computation of Moran's I
 c_t = mean(x)
 x_c = x - c_t
-diag(wts) = 0
 ss_tot = sum(x_c * x_c)
 covmat = wts * (x_c %*% t(x_c))
 N = length(x)
 W = sum(wts)
 moran_mat = N / W * covmat / ss_tot
 moran_I = sum(moran_mat)
+print(sprintf("Moran's I manual computation: %.3f", moran_I))
 
 # From package
 Moran.I(x, wts, scaled=TRUE)  # from package
@@ -226,7 +255,7 @@ gdf_moran_at_t = gdf %>%
 ggplot() +
   geom_sf(color = "#2b2b2b", fill = "white", size=0.125, data=usa) + 
   geom_sf(data=gdf_moran_at_t, aes(fill=moran), size=0.0) +
-  geom_sf(data=filter(gdf_res_at_t, outlier_lower_tail), fill="red") +
+  # geom_sf(data=filter(gdf_res_at_t, outlier_lower_tail), fill="red") +
   coord_sf(xlim=c(-125, -77)) +
   scale_fill_viridis() +
   labs(
