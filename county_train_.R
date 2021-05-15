@@ -48,8 +48,15 @@ county_train %<>%
   filter(!is.na(y) 
   )
 #length(unique(county_train$fips))
+# county_train %>% 
+#   filter(fips == "06025") %>% 
+#   select(roll_deaths, 
+#          cum_deaths,
+#          deaths, 
+#          days_since_thresh, days_since_intrv_stayhome, days_since_intrv_decrease) %>% View
 
-## Require at least 17 days after intervention + lag
+
+## Require 17 days after intervention + lag
 county_train_stayhome <- county_train %>% 
   filter(!is.na(stayhome), days_since_intrv_stayhome <= 17)
 #length(unique(county_train_stayhome$fips))
