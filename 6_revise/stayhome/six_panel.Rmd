@@ -1,0 +1,173 @@
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(gridExtra)
+library(cowplot)
+library(reshape2)
+library(rstan)
+source("utils.R")
+```
+
+```{r}
+fit = read_rds("./model_full_rstan_var_revised_0.rds")
+```
+
+```{r}
+# params for counterfactual curves
+up = 10
+down = -10
+```
+
+```{r}
+gg_days_btwn_sampling <- function(data, name, up, down, lag_decrease = NULL, lag = NULL) {
+  p <- data %>% 
+    ggplot() + 
+    geom_point(aes(x=date, y=y)) + 
+    geom_line(aes(x=date, y=fit_med), 
+              col = "#0072B2", size = 1) + 
+    geom_ribbon(aes(x=date, ymin=fit_lo, ymax=fit_hi), 
+                alpha= 0.1, fill = "#0072B2") + 
+      geom_line(aes(x=date, y=ctr1_med), 
+              col = "#D55E00", size = 1) + 
+      geom_ribbon(aes(x=date, ymin=ctr1_lo, ymax=ctr1_hi), 
+                alpha= 0.1, fill = "#D55E00") + 
+       geom_line(aes(x=date, y=ctr3_med), 
+              col = "#009E73", size = 1) + 
+      geom_ribbon(aes(x=date, ymin=ctr3_lo, ymax=ctr3_hi), 
+                alpha= 0.1, fill = "#009E73") +  
+      labs(title = name, x = "", y = "") + 
+      xlim(as.Date("2020-03-01"), as.Date("2020-04-30"))
+    
+    if(!is.null(lag_decrease)) {
+      p <- p + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting), color = "#0072B2") + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting + lag_decrease), linetype="dotted", color = "#0072B2") + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting + lag_decrease + down), linetype="dotted", color = "#009E73") + 
+      geom_vline(aes(xintercept = decrease_50_total_visiting + lag_decrease + up), linetype="dotted", color = "#D55E00")
+    }
+    
+    if(!is.null(lag)) {
+      p <- p + 
+      geom_vline(aes(xintercept = stayhome), color = "#0072B2") + 
+      geom_vline(aes(xintercept = stayhome + lag), linetype="dotted", color = "#0072B2") + 
+      geom_vline(aes(xintercept = stayhome + lag + down), linetype="dotted", color = "#009E73") + 
+      geom_vline(aes(xintercept = stayhome + lag + up), linetype="dotted", color = "#D55E00")
+    }
+
+  p + theme_minimal_grid()
+}
+```
+
+
+```{r}
+county_stayhome = read_feather("../../county_train_.feather")
+county_fit_posterior = my_posterior_predict(fit, county_stayhome)
+county_fit = county_fit_posterior$yhat %>% 
+  melt() %>% 
+  `names<-`(c("sim", "row", "yhat")) %>% 
+  left_join(
+    select(
+      mutate(county_stayhome, row=1:n()),
+      row, nchs, days_since_thresh, days_since_intrv_stayhome, days_since_intrv_decrease
+    )
+  )
+
+county_stayhome_up = county_stayhome %>% 
+  mutate(
+    days_since_intrv_stayhome = days_since_intrv_stayhome - up,
+    days_btwn_stayhome_thresh = days_btwn_stayhome_thresh + up,
+  )
+county_fit_posterior_up = my_posterior_predict(fit, county_stayhome_up)
+county_fit_up = county_fit_posterior_up$yhat %>% 
+  melt() %>% 
+  `names<-`(c("sim", "row", "yhat")) %>% 
+  left_join(
+    select(
+      mutate(county_stayhome_up, row=1:n()),
+      row, nchs, days_since_thresh, days_since_intrv_stayhome, days_since_intrv_decrease
+    )
+  )
+
+county_stayhome_down = county_stayhome %>% 
+  mutate(
+    days_since_intrv_stayhome = days_since_intrv_stayhome - down,
+    days_btwn_stayhome_thresh = days_btwn_stayhome_thresh + down,
+  )
+county_fit_posterior_down = my_posterior_predict(fit, county_stayhome_down)
+county_fit_down = county_fit_posterior_down$yhat %>% 
+  melt() %>% 
+  `names<-`(c("sim", "row", "yhat")) %>% 
+  left_join(
+    select(
+      mutate(county_stayhome_down, row=1:n()),
+      row, nchs, days_since_thresh, days_since_intrv_stayhome, days_since_intrv_decrease
+    )
+  )
+```
+
+```{r}
+county_stayhome = county_fit %>%
+  group_by(nchs, sim, days_since_thresh) %>%
+  summarize(yhat = sum(yhat), .groups="drop") %>% 
+  mutate(log_yhat=log(yhat)) %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarize(
+    fit_mu = mean(yhat),
+    fit_med = median(yhat), # use posterior median to hand skewness
+    fit_lo = quantile(yhat, 0.05),
+    fit_hi = quantile(yhat, 0.95),
+    .groups="drop"
+  ) %>% 
+  mutate(type="actual")
+
+county_stayhome_up = county_fit_up %>%
+  group_by(nchs, sim, days_since_thresh) %>%
+  summarize(yhat = sum(yhat), .groups="drop") %>% 
+  mutate(log_yhat=log(yhat)) %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarize(
+    fit_mu = mean(yhat),
+    fit_med = median(yhat), # use posterior median to hand skewness
+    fit_lo = quantile(yhat, 0.05),
+    fit_hi = quantile(yhat, 0.95),
+    .groups="drop"
+  ) %>% 
+  mutate(type="late")
+
+county_stayhome_down = county_fit_down  %>%
+  group_by(nchs, sim, days_since_thresh) %>%
+  summarize(yhat = sum(yhat), .groups="drop") %>% 
+  mutate(log_yhat=log(yhat)) %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarize(
+    fit_mu = mean(yhat),
+    fit_med = median(yhat), # use posterior median to hand skewness
+    fit_lo = quantile(yhat, 0.05),
+    fit_hi = quantile(yhat, 0.95),
+    .groups="drop"
+  ) %>%
+  mutate(type="early")
+```
+
+
+```{r}
+plotdata = bind_rows(
+  county_stayhome,
+  county_stayhome_up,
+  county_stayhome_down
+) %>% 
+  filter(days_since_thresh <= 30)
+```
+
+```{r}
+ggplot(plotdata) +
+  geom_line(aes(x=days_since_thresh, y=fit_med, color=type)) +
+  geom_ribbon(aes(x=days_since_thresh, ymax=fit_hi, ymin=fit_lo, fill=type, alpha=0.3)) +
+  # scale_y_log10() +
+  # facet_wrap(~ nchs) +
+  facet_wrap(~ nchs, scales = "free_y") +
+  theme_half_open()
+```
+
