@@ -1,10 +1,6 @@
 library(xts)
 
-params <- list()
-params$lag = 12
-params$after_lag_limit = 17
-params$observed_limit = 7
-
+####
 ## Read data
 source("./county_features.R")
 county_deaths_desc_ <- read_feather("./county_deaths_desc_.feather")
@@ -14,15 +10,18 @@ rm(list = c("county_features",
             "county_deaths_desc", 
             "county_deaths_desc_"))
 
-# use the threshold_day to get the time counter 
+####
+## Use the threshold_day to get the time counter 
 county_train %<>%
   mutate(days_since_thresh = as.numeric(date - threshold_day))
 
+####
 ## Remove timestamps with negative counts
 #length(unique(county_train$fips)); dim(county_train)
 county_train$deaths[which(county_train$deaths < 0)] <- NA
 #length(unique(county_train$fips)); dim(county_train)
 
+####
 ## Compute rolling means
 county_train %<>% 
   group_by(fips) %>% 
@@ -31,19 +30,19 @@ county_train %<>%
   ungroup() %>% 
   mutate(roll_deaths = round(as.numeric(roll_deaths)))
 
+####
 ## Remove rows with negative days_since_thresh
 #sum(county_train$days_since_thresh < 0)
 county_train %<>%
   filter(days_since_thresh >= 0)
 
+####
 ## define y
 #length(unique(county_train$fips))
 county_train %<>%  
   mutate(y = roll_deaths,  
-         intrv_stayhome = (date - stayhome >= params$lag) * 1,  
-         intrv_decrease = (date - decrease_50_total_visiting >= params$lag) * 1,
-         days_since_intrv_stayhome = as.numeric(date - stayhome - params$lag + 1), 
-         days_since_intrv_decrease = as.numeric(date - decrease_50_total_visiting - params$lag + 1),
+         days_since_intrv_stayhome = as.numeric(date - stayhome + 1), 
+         days_since_intrv_decrease = as.numeric(date - decrease_50_total_visiting + 1),
          age_65_plus = log(1e4 * age_65_plus / pop), 
          black = log(1e4 * black / pop), 
          hispanic = log(1e4 * hispanic / pop), 
@@ -55,123 +54,26 @@ county_train %<>%
 #length(unique(county_train$fips))
 
 ####
-## Require after_lag_limit days after intervention + lag
-county_train_ <- county_train %>% 
-  rowwise() %>% 
-  mutate(days_since_intrv_ = min(days_since_intrv_stayhome, days_since_intrv_decrease), 
-         days_since_intrv_ = if_else(is.na(days_since_intrv_), 
-                                     days_since_thresh, 
-                                     days_since_intrv_)) %>% 
-  filter(days_since_intrv_ <= params$after_lag_limit)
-#length(unique(county_train_$fips))
-
-#county_train_stayhome <- county_train %>% 
-#  filter(!is.na(stayhome), days_since_intrv_stayhome <= params$after_lag_limit)
-#length(unique(county_train_stayhome$fips))
-
-#county_train_decrease <- county_train %>% 
-#  filter(!is.na(decrease_50_total_visiting), days_since_intrv_decrease <= params$after_lag_limit)
-#length(unique(county_train_decrease$fips))
-
-####
-## Require counties to have a baseline level in safegraph data
-county_train_ %<>% filter(!is.na(baseline_total_visiting))
-#length(unique(county_train_$fips))
-
-#county_train_stayhome %<>% filter(!is.na(baseline_total_visiting))
-#length(unique(county_train_stayhome$fips))
-
-#county_train_decrease %<>% filter(!is.na(baseline_total_visiting))
-#length(unique(county_train_decrease$fips))
-
-####
-## Require at least 7 observations
-county_train_ <- county_train_[!is.na(county_train_$deaths), ]
-
-remove_fips <- county_train_ %>% 
-  group_by(fips) %>% 
-  summarise(n = n()) %>% 
-  filter(n < params$observed_limit) %>% 
-  pull(fips)
-county_train_ <- county_train_[!county_train_$fips %in% remove_fips, ]
-#length(unique(county_train_$fips))
-
-# remove_fips <- county_train_stayhome %>% 
-#   group_by(fips) %>% 
-#   summarise(max_days = max(days_since_thresh)) %>% 
-#   filter(max_days < 7) %>% 
-#   pull(fips)
-# county_train_stayhome <- county_train_stayhome[!county_train_stayhome$fips %in% remove_fips, ]
-#length(unique(county_train_stayhome$fips))
-
-# remove_fips <- county_train_decrease %>% 
-#   group_by(fips) %>% 
-#   summarise(max_days = max(days_since_thresh)) %>% 
-#   filter(max_days < 7) %>% 
-#   pull(fips)
-# county_train_decrease <- county_train_decrease[!county_train_decrease$fips %in% remove_fips, ]
-#length(unique(county_train_decrease$fips))
-
-####
-## Require at least 5 deaths
-
-# cum_deaths_ <- county_train_stayhome %>% 
-#   group_by(fips) %>% 
-#   summarise(cum_deaths = max(cum_deaths)) %>% 
-#   ungroup() %>% pull(cum_deaths)
-#summary(cum_deaths_); quantile(cum_deaths_, 0.6)
-# cum_deaths_ <- county_train_decrease %>% 
-#   group_by(fips) %>% 
-#   summarise(cum_deaths = max(cum_deaths)) %>% 
-#   ungroup() %>% pull(cum_deaths)
-#summary(cum_deaths_); quantile(cum_deaths_, 0.6)
-
-# remove_fips <- county_train_stayhome %>% 
-#   group_by(fips) %>% 
-#   summarise(cum_deaths = max(cum_deaths)) %>% 
-#   filter(cum_deaths <= 5) %>% 
-#   pull(fips)
-# county_train_stayhome <- county_train_stayhome[!county_train_stayhome$fips %in% remove_fips, ]
-#length(unique(county_train_stayhome$fips))
-
-# remove_fips <- county_train_decrease %>% 
-#   group_by(fips) %>% 
-#   summarise(cum_deaths = max(cum_deaths)) %>% 
-#   filter(cum_deaths <= 5) %>% 
-#   pull(fips)
-# county_train_decrease <- county_train_decrease[!county_train_decrease$fips %in% remove_fips, ]
-#length(unique(county_train_decrease$fips))
-
-rm(list=c("cum_deaths_", 
-          "remove_fips"))
-
-####
 ## Create index columns
-county_train_ %<>% 
+county_train <- county_train %<>% 
   group_by(fips) %>% 
   arrange(date) %>% 
   mutate(index = row_number(), 
          index_desc = sort(index, decreasing = TRUE)) %>% 
   ungroup()
-county_train_ <- arrange(county_train_, fips, index)
+county_train <- arrange(county_train, fips, index)
 
-# county_train_stayhome %<>% 
-#   group_by(fips) %>% 
-#   arrange(date) %>% 
-#   mutate(index = row_number(), 
-#          index_desc = sort(index, decreasing = TRUE)) %>% 
-#   ungroup()
-# county_train_stayhome <- arrange(county_train_stayhome, fips, index)
-# 
-# county_train_decrease %<>% 
-#   group_by(fips) %>% 
-#   arrange(date) %>% 
-#   mutate(index = row_number(), 
-#          index_desc = sort(index, decreasing = TRUE)) %>% 
-#   ungroup()
-# county_train_decrease <- arrange(county_train_decrease, fips, index)
-# 
-# write_feather(county_train_stayhome, "./county_train_stayhome.feather")
-# write_feather(county_train_decrease, "./county_train_decrease.feather")
+county_train %<>%
+  select(fips, county, state, date,
+         cum_cases, cum_deaths, 
+         index, index_desc,
+         pop, popdensity, 
+         stayhome, gt50, gt500, schools, restaurants, entertainment, 
+         contains("baseline"), contains("decrease"), 
+         threshold_day, days_btwn_stayhome_thresh, days_btwn_decrease_thresh, 
+         decrease_on_stayhome, min_decrease, 
+         days_since_thresh, days_since_intrv_stayhome, days_since_intrv_decrease, 
+         college, age_65_plus, black, hispanic,
+         y)
 
-write_feather(county_train_, "./county_train_.feather")
+write_feather(county_train, "./county_train_.feather")
