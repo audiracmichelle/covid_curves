@@ -54,6 +54,11 @@ county_train %<>%
 #length(unique(county_train$fips))
 
 ####
+## Require counties to have a baseline level in safegraph data
+county_train %<>% filter(!is.na(baseline_total_visiting))
+#length(unique(county_train_stayhome$fips))
+
+####
 ## Create index columns
 county_train <- county_train %<>% 
   group_by(fips) %>% 
@@ -73,7 +78,7 @@ county_train %<>%
          threshold_day, days_btwn_stayhome_thresh, days_btwn_decrease_thresh, 
          decrease_on_stayhome, min_decrease, 
          days_since_thresh, days_since_intrv_stayhome, days_since_intrv_decrease, 
-         college, age_65_plus, black, hispanic,
+         college, age_65_plus, black, hispanic, NCHS,
          y)
 
 write_feather(county_train, "./county_train_.feather")
