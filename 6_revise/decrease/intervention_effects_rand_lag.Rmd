@@ -1,0 +1,157 @@
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(feather)
+library(gridExtra)
+library(cowplot)
+library(lubridate)
+library(reshape2)
+library(rstan)
+source("../utils.R")
+```
+
+```{r}
+fit = read_rds("./model_full_rstan_var_revised_rand_lag.rds")
+```
+
+```{r}
+# params for counterfactual curves
+up = 10
+down = -10
+```
+
+```{r}
+traindata = read_feather("../../county_train_.feather") %>%   # 1454 counties
+  filter(date <= ymd("20200420")) %>%   # 1021 counties
+  group_by(fips) %>%
+  filter(
+    max(days_since_thresh) >= 7,  # min data points, 909 counties
+    max(cum_deaths) >= 5  # there as an outbreak, 400 counties
+  ) %>%  
+  ungroup()
+valid_fips = unique(traindata$fips)
+
+
+evaldata = read_feather("../../county_train_.feather") %>%   # 1454 counties
+  filter(fips %in% valid_fips) %>%   # 1021 counties
+  filter(days_since_thresh <= 30) %>% 
+  group_by(fips) %>% 
+  # filter(state != "New York") %>% 
+  filter(
+    max(days_since_thresh) >= 7,  # min data points, 909 counties
+    max(cum_deaths) >= 5  # there as an outbreak, 400 counties
+  ) %>%  
+  ungroup()
+
+```
+
+```{r}
+county_fit_posterior = my_posterior_predict_rand_lag(fit, evaldata, type="decrease")
+county_fit = county_fit_posterior$yhat %>% 
+  melt() %>% 
+  `names<-`(c("sim", "row", "yhat")) %>% 
+  left_join(
+    select(
+      mutate(evaldata, row=1:n()),
+      row, nchs, days_since_thresh, days_since_intrv_decrease
+    )
+  )
+
+evaldata_up = evaldata %>% 
+  mutate(
+    days_since_intrv_decrease = days_since_intrv_decrease - up,
+    days_btwn_decrease_thresh = days_btwn_decrease_thresh + up,
+  )
+county_fit_posterior_up = my_posterior_predict_rand_lag(fit, evaldata_up, type="decrease")
+county_fit_up = county_fit_posterior_up$yhat %>% 
+  melt() %>% 
+  `names<-`(c("sim", "row", "yhat")) %>% 
+  left_join(
+    select(
+      mutate(evaldata_up, row=1:n()),
+      row, nchs, days_since_thresh, days_since_intrv_decrease, days_since_intrv_decrease
+    )
+  )
+
+evaldata_down = evaldata %>% 
+  mutate(
+    days_since_intrv_decrease = days_since_intrv_decrease - down,
+    days_btwn_decrease_thresh = days_btwn_decrease_thresh + down,
+  )
+county_fit_posterior_down = my_posterior_predict_rand_lag(fit, evaldata_down, type="decrease")
+county_fit_down = county_fit_posterior_down$yhat %>% 
+  melt() %>% 
+  `names<-`(c("sim", "row", "yhat")) %>% 
+  left_join(
+    select(
+      mutate(evaldata_down, row=1:n()),
+      row, nchs, days_since_thresh, days_since_intrv_decrease, days_since_intrv_decrease
+    )
+  )
+```
+
+```{r}
+county_decrease = county_fit %>%
+  group_by(nchs, sim, days_since_thresh) %>%
+  summarize(yhat = sum(yhat), .groups="drop") %>% 
+  mutate(log_yhat=log(yhat)) %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarize(
+    fit_mu = mean(yhat),
+    fit_med = median(yhat), # use posterior median to hand skewness
+    fit_lo = quantile(yhat, 0.05),
+    fit_hi = quantile(yhat, 0.95),
+    .groups="drop"
+  ) %>% 
+  mutate(type="actual")
+
+county_decrease_up = county_fit_up %>%
+  group_by(nchs, sim, days_since_thresh) %>%
+  summarize(yhat = sum(yhat), .groups="drop") %>% 
+  mutate(log_yhat=log(yhat)) %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarize(
+    fit_mu = mean(yhat),
+    fit_med = median(yhat), # use posterior median to hand skewness
+    fit_lo = quantile(yhat, 0.05),
+    fit_hi = quantile(yhat, 0.95),
+    .groups="drop"
+  ) %>% 
+  mutate(type="late")
+
+county_decrease_down = county_fit_down  %>%
+  group_by(nchs, sim, days_since_thresh) %>%
+  summarize(yhat = sum(yhat), .groups="drop") %>% 
+  mutate(log_yhat=log(yhat)) %>% 
+  group_by(nchs, days_since_thresh) %>% 
+  summarize(
+    fit_mu = mean(yhat),
+    fit_med = median(yhat), # use posterior median to hand skewness
+    fit_lo = quantile(yhat, 0.05),
+    fit_hi = quantile(yhat, 0.95),
+    .groups="drop"
+  ) %>%
+  mutate(type="early")
+```
+
+
+```{r}
+plotdata = bind_rows(
+  county_decrease,
+  county_decrease_up,
+  county_decrease_down
+) %>% 
+  filter(days_since_thresh <= 30)
+```
+
+```{r}
+ggplot(plotdata) +
+  geom_line(aes(x=days_since_thresh, y=fit_med, color=type)) +
+  geom_ribbon(aes(x=days_since_thresh, ymax=fit_hi, ymin=fit_lo, fill=type, alpha=0.3)) +
+  # scale_y_log10() +
+  # facet_wrap(~ nchs) +
+  facet_wrap(~ nchs, scales = "free_y") +
+  theme_half_open()
+```
+
